@@ -1,0 +1,37 @@
+# Default FastKit configuration
+project:
+  default_structure:
+    - "app/"
+    - "app/api/"
+    - "app/core/"
+    - "app/models/"
+    - "app/schemas/"
+    - "app/services/"
+    - "tests/"
+    - "docs/"
+
+auth:
+  available_types:
+    - jwt
+    - oauth
+    - session
+  default: jwt
+
+database:
+  available_types:
+    - sqlite
+    - postgresql
+  default: sqlite
+
+cache:
+  available_types:
+    - redis
+    - memcached
+  default: redis
+
+deployment:
+  available_platforms:
+    - docker
+    - kubernetes
+    - heroku
+  default: docker

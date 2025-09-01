@@ -1,0 +1,24 @@
+[project]
+description = """
+              FastKit is a lightweight FastAPI project generator that helps you scaffold new applications in seconds.
+              It provides ready-to-use boilerplate code, database integrations, caching layers, and common services,
+              all configurable via a simple CLI. Features include pluggable integrations
+              (Postgres, SQLite, Redis, Celery, RabbitMQ, etc.), customizable project templates,
+              an interactive CLI, and the ability to add new services anytime. FastKit gives you a clean,
+              production-ready project structure so you can focus on building features, not boilerplate.
+            """
+name = "fastkit"
+version = "0.1.0"
+authors = [{ name = "Kalyan Kanuri", email = "kalyankanuri497@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.116.1,<0.117.0)",
+    "rich (>=14.1.0,<15.0.0)",
+    "halo (>=0.0.31,<0.0.32)",
+    "typer (>=0.17.3,<0.18.0)",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,1 @@
+# Base project structure generator

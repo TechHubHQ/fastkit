@@ -1,0 +1,1 @@
+# Example: Microservices architecture setup

@@ -1,0 +1,1 @@
+# Command: fastkit migrate (database migrations)

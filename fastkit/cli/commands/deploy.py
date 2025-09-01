@@ -1,0 +1,1 @@
+# Command: fastkit deploy <platform>

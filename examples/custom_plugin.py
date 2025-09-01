@@ -1,0 +1,1 @@
+# Example: Creating a custom FastKit plugin

@@ -1,0 +1,1 @@
+# Example: Full-stack project with all integrations

@@ -1,0 +1,1 @@
+# CRUD domain generator
