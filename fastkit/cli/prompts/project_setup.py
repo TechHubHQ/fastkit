@@ -1,1 +1,0 @@
-# Interactive project setup wizard

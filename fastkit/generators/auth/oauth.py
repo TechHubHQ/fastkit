@@ -1,1 +1,0 @@
-# OAuth authentication generator

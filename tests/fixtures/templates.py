@@ -1,1 +1,0 @@
-# Template fixtures for testing

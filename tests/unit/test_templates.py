@@ -1,1 +1,0 @@
-# Template rendering unit tests

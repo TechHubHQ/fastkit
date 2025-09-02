@@ -1,1 +1,0 @@
-# Example: Basic FastAPI project generation

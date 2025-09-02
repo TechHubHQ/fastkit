@@ -1,1 +1,0 @@
-# Template Customization Guide

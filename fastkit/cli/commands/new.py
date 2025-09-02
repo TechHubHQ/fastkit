@@ -1,1 +1,0 @@
-# Command: fastkit new <project-name>

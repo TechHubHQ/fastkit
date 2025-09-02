@@ -1,1 +1,0 @@
-# Project generation integration tests

@@ -1,1 +1,0 @@
-# Plugin loader and manager

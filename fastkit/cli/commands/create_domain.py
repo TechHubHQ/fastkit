@@ -1,1 +1,0 @@
-# Command: fastkit create-domain <domain-name>

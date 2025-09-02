@@ -1,1 +1,0 @@
-# ELK Stack logging integration

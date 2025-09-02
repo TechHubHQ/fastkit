@@ -1,1 +1,0 @@
-# Project name and structure validators

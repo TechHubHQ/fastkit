@@ -1,1 +1,0 @@
-# Database generators package

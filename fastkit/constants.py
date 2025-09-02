@@ -1,1 +1,0 @@
-# FastKit constants and configuration values

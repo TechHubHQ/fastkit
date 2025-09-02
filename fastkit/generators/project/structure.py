@@ -1,1 +1,0 @@
-# Project directory structure generator

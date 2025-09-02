@@ -1,1 +1,0 @@
-# Heroku deployment generator
