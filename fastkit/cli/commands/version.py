@@ -69,31 +69,6 @@ def version():
     features_table.add_row("📦 Service Templates", "[green]✅ Active[/green]")
     features_table.add_row("🔧 CLI Tools", "[green]✅ Active[/green]")
 
-    # Dependencies info
-    deps_text = Text()
-    deps_text.append("📦 Core Dependencies:\n\n", style="bold bright_magenta")
-    deps_text.append("• ", style="bright_cyan")
-    deps_text.append("FastAPI ", style="white")
-    deps_text.append("0.116.1+\n", style="bright_green")
-    deps_text.append("• ", style="bright_cyan")
-    deps_text.append("Rich ", style="white")
-    deps_text.append("14.1.0+\n", style="bright_green")
-    deps_text.append("• ", style="bright_cyan")
-    deps_text.append("Typer ", style="white")
-    deps_text.append("0.17.3+\n", style="bright_green")
-    deps_text.append("• ", style="bright_cyan")
-    deps_text.append("Halo ", style="white")
-    deps_text.append("0.0.31+", style="bright_green")
-
-    deps_panel = Panel(
-        deps_text,
-        box=box.ROUNDED,
-        border_style="bright_magenta",
-        title="[bold bright_magenta]📦 Dependencies[/bold bright_magenta]",
-        title_align="left",
-        padding=(1, 2)
-    )
-
     # Display everything
     console.print()
     console.print(version_panel)
@@ -102,9 +77,6 @@ def version():
     # Display tables side by side
     console.print(
         Columns([system_table, features_table], equal=True, expand=True))
-    console.print()
-
-    console.print(deps_panel)
     console.print()
 
     # Footer with links

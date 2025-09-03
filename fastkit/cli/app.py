@@ -14,6 +14,7 @@ from fastkit.cli.commands.version import version
 app = typer.Typer()
 console = Console()
 
+
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
