@@ -1,12 +1,8 @@
 import time
 from rich.progress import track
 from halo import Halo
-from rich import box
 from rich.align import Align
-from rich.panel import Panel
 from rich.text import Text
-from rich.table import Table
-from rich.columns import Columns
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -35,145 +31,66 @@ def loader_demo():
 
 
 def print_ascii_msg():
-    """Display the clean and elegant ASCII logo with enhanced styling"""
+    """Display the clean and elegant ASCII logo"""
     # Get the ASCII art from the assets module
     ascii_msg = get_fastkit_logo()
 
-    # Create a beautiful panel for the logo
-    logo_panel = Panel(
-        Align.center(ascii_msg),
-        box=box.ROUNDED,
-        border_style="bright_blue",
-        padding=(1, 2),
-        title="[bold bright_cyan]⚡ FastKit CLI ⚡[/bold bright_cyan]",
-        title_align="center",
-        subtitle="[italic bright_white]Lightning Fast Development[/italic bright_white]",
-        subtitle_align="center"
-    )
-
     console.print()
-    console.print(logo_panel)
+    console.print(Align.center(ascii_msg))
+    console.print(Align.center(
+        "[bold bright_cyan]Lightning Fast FastAPI Development[/bold bright_cyan]"))
     console.print()
 
 
 def create_feature_showcase():
-    """Create a modern feature showcase table"""
-    table = Table(
-        show_header=True,
-        header_style="bold bright_cyan",
-        border_style="bright_blue",
-        box=box.ROUNDED,
-        title="[bold bright_yellow]🚀 FastKit Features[/bold bright_yellow]",
-        title_style="bold bright_yellow",
-        caption="[italic dim]Build faster, deploy smarter[/italic dim]",
-        caption_style="italic dim"
-    )
+    """Create a clean feature overview"""
+    features_text = Text()
+    features_text.append("Features:\n", style="bold bright_cyan")
+    features_text.append(
+        "  • Project scaffolding with modern FastAPI templates\n", style="white")
+    features_text.append(
+        "  • Database integration (PostgreSQL, SQLite, MongoDB)\n", style="white")
+    features_text.append(
+        "  • Redis caching with async support\n", style="white")
+    features_text.append(
+        "  • Docker and CI/CD configurations\n", style="white")
+    features_text.append(
+        "  • Production-ready microservice patterns\n", style="white")
 
-    table.add_column("🎯 Feature", style="bright_green", width=20)
-    table.add_column("📝 Description", style="white", width=40)
-    table.add_column("⚡ Status", style="bright_magenta", width=12)
-
-    table.add_row(
-        "[bold]Project Generator[/bold]",
-        "Scaffold FastAPI projects in seconds",
-        "[green]✅ Ready[/green]"
-    )
-    table.add_row(
-        "[bold]Database Integration[/bold]",
-        "PostgreSQL, SQLite, MongoDB support",
-        "[green]✅ Ready[/green]"
-    )
-    table.add_row(
-        "[bold]Caching Layer[/bold]",
-        "Redis integration with async support",
-        "[green]✅ Ready[/green]"
-    )
-    table.add_row(
-        "[bold]Service Templates[/bold]",
-        "Pre-built microservice patterns",
-        "[yellow]🔄 Beta[/yellow]"
-    )
-
-    return table
+    return features_text
 
 
 def create_quick_start_panel():
-    """Create a modern quick start guide"""
+    """Create a clean quick start guide"""
     quick_start_content = Text()
-    quick_start_content.append("💡 ", style="bright_yellow")
+    quick_start_content.append("Quick Start:\n", style="bold bright_green")
     quick_start_content.append(
-        "Quick Start Commands:\n\n", style="bold bright_white")
+        "  fastkit create-project    ", style="bold bright_blue")
+    quick_start_content.append(
+        "# Create a new FastAPI project\n", style="dim white")
+    quick_start_content.append(
+        "  fastkit add-service       ", style="bold bright_blue")
+    quick_start_content.append(
+        "# Add service to existing project\n", style="dim white")
+    quick_start_content.append(
+        "  fastkit --help            ", style="bold bright_blue")
+    quick_start_content.append(
+        "# Show all available commands\n", style="dim white")
 
-    commands = [
-        ("fastkit --help", "Show all available commands", "🔍"),
-        ("fastkit create-project", "Generate a new FastAPI project", "🏗️"),
-        ("fastkit add-service", "Add a new service to your project", "⚙️"),
-        ("fastkit version", "Check current version", "📋")
-    ]
-
-    for cmd, desc, emoji in commands:
-        quick_start_content.append(f"{emoji} ", style="bright_cyan")
-        quick_start_content.append(f"{cmd}", style="bold bright_blue")
-        quick_start_content.append(f"\n   {desc}\n\n", style="dim white")
-
-    return Panel(
-        quick_start_content,
-        box=box.ROUNDED,
-        border_style="bright_green",
-        title="[bold bright_green]🚀 Getting Started[/bold bright_green]",
-        title_align="left",
-        padding=(1, 2)
-    )
+    return quick_start_content
 
 
-def create_info_panels():
-    """Create informational panels with modern styling"""
-    # Tips panel
-    tips_content = Text()
-    tips_content.append("💡 Pro Tips:\n\n", style="bold bright_yellow")
-    tips_content.append("• Use ", style="white")
-    tips_content.append("--help", style="bold bright_cyan")
-    tips_content.append(" with any command for details\n", style="white")
-    tips_content.append(
-        "• All projects include Docker support\n", style="white")
-    tips_content.append("• Templates are fully customizable\n", style="white")
-    tips_content.append("• Built-in testing and CI/CD configs", style="white")
+def create_info_section():
+    """Create a clean information section"""
+    info_text = Text()
+    info_text.append("Documentation: ", style="white")
+    info_text.append("https://github.com/TechHubHQ/fastkit\n",
+                     style="bright_blue underline")
+    info_text.append("Issues & Support: ", style="white")
+    info_text.append(
+        "https://github.com/TechHubHQ/fastkit/issues\n", style="bright_blue underline")
 
-    tips_panel = Panel(
-        tips_content,
-        box=box.ROUNDED,
-        border_style="bright_yellow",
-        title="[bold bright_yellow]💡 Tips & Tricks[/bold bright_yellow]",
-        title_align="left",
-        padding=(1, 2)
-    )
-
-    # Stats panel
-    stats_content = Text()
-    stats_content.append("📊 FastKit Stats:\n\n", style="bold bright_magenta")
-    stats_content.append("⚡ ", style="bright_yellow")
-    stats_content.append("Setup Time: ", style="white")
-    stats_content.append("< 30 seconds\n", style="bold bright_green")
-    stats_content.append("🎯 ", style="bright_blue")
-    stats_content.append("Code Reduction: ", style="white")
-    stats_content.append("80%+\n", style="bold bright_green")
-    stats_content.append("🚀 ", style="bright_red")
-    stats_content.append("Performance: ", style="white")
-    stats_content.append("Production Ready\n", style="bold bright_green")
-    stats_content.append("🔧 ", style="bright_cyan")
-    stats_content.append("Integrations: ", style="white")
-    stats_content.append("15+ Services", style="bold bright_green")
-
-    stats_panel = Panel(
-        stats_content,
-        box=box.ROUNDED,
-        border_style="bright_magenta",
-        title="[bold bright_magenta]📊 Performance[/bold bright_magenta]",
-        title_align="left",
-        padding=(1, 2)
-    )
-
-    return Columns([tips_panel, stats_panel], equal=True, expand=True)
+    return info_text
 
 
 def show_loading_animation():
