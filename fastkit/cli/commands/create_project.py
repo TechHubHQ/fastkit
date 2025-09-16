@@ -62,6 +62,65 @@ def _normalize_architecture_choice(architecture: str) -> str:
     return mapping.get(architecture.lower(), architecture.lower())
 
 
+def _get_microservices_config() -> dict:
+    """Get microservices-specific configuration from user."""
+    console.print("\n[bold]Microservices Configuration[/bold]")
+    
+    # Ask for number of services
+    num_services = typer.prompt(
+        "How many services do you want to create?", 
+        type=int, 
+        default=2
+    )
+    
+    services = []
+    console.print(f"\nEnter names for {num_services} services:")
+    
+    for i in range(num_services):
+        service_name = typer.prompt(
+            f"Service {i+1} name", 
+            default=f"service-{i+1}"
+        ).strip().lower().replace(" ", "-")
+        services.append(service_name)
+    
+    # Ask about API Gateway
+    include_gateway = typer.confirm(
+        "Include API Gateway service?", 
+        default=True
+    )
+    
+    return {
+        "services": services,
+        "include_gateway": include_gateway,
+        "include_shared": True  # Always include shared libraries
+    }
+
+
+def _get_onion_architecture_config() -> dict:
+    """Get onion architecture-specific configuration from user."""
+    console.print("\n[bold]Onion Architecture Configuration[/bold]")
+    
+    # Ask about domain complexity
+    domain_entities = typer.prompt(
+        "Enter main domain entities (comma-separated)", 
+        default="User,Product"
+    ).strip()
+    
+    entities = [entity.strip() for entity in domain_entities.split(",") if entity.strip()]
+    
+    # Ask about use cases
+    include_cqrs = typer.confirm(
+        "Include CQRS pattern (Command/Query separation)?", 
+        default=False
+    )
+    
+    return {
+        "entities": entities,
+        "include_cqrs": include_cqrs,
+        "include_di": True  # Always include dependency injection
+    }
+
+
 def create_project(
     project_name: Optional[str] = typer.Argument(
         None, help="Name of the project to create (e.g., myapp)"
@@ -139,6 +198,13 @@ def create_project(
                                  "redis", "none"], default="redis")
         )
 
+    # Get architecture-specific configuration
+    architecture_config = {}
+    if architecture == "microservices":
+        architecture_config = _get_microservices_config()
+    elif architecture == "onion-architecture":
+        architecture_config = _get_onion_architecture_config()
+
     console.print()
     console.print("[bold]Summary[/bold]")
     console.print(f"  Project: [cyan]{project_name}[/cyan]")
@@ -146,6 +212,10 @@ def create_project(
     console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
     console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
     console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
+    
+    if architecture_config:
+        console.print(f"  Config:  [cyan]{architecture_config}[/cyan]")
+    
     console.print()
 
     proceed = typer.confirm(
@@ -163,6 +233,7 @@ def create_project(
         auth_type=auth_type,
         db_choice=db_choice,
         cache_choice=cache_choice,
+        architecture_config=architecture_config,
     )
 
     console.print(

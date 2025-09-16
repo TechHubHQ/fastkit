@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+{% for service in services %}
+  {{ service }}:
+    build:
+      context: ./services/{{ service }}
+      dockerfile: Dockerfile.dev
+    ports:
+{% if service == 'api-gateway' %}
+      - "8000:8000"
+{% else %}
+      - "{{ 8001 + loop.index0 }}:8000"
+{% endif %}
+    environment:
+      - ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/{{ project_name }}_{{ service.replace('-', '_') }}_dev
+      - REDIS_URL=redis://redis:6379
+      - DEBUG=true
+    volumes:
+      - ./services/{{ service }}/app:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - {{ project_name }}_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+{% endfor %}
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: {{ project_name }}_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    networks:
+      - {{ project_name }}_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - {{ project_name }}_network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  {{ project_name }}_network:
+    driver: bridge

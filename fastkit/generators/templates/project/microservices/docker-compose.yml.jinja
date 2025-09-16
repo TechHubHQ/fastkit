@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+{% for service in services %}
+  {{ service }}:
+    build:
+      context: ./services/{{ service }}
+      dockerfile: Dockerfile
+    ports:
+{% if service == 'api-gateway' %}
+      - "8000:8000"
+{% else %}
+      - "{{ 8001 + loop.index0 }}:8000"
+{% endif %}
+    environment:
+      - ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/{{ project_name }}_{{ service.replace('-', '_') }}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - {{ project_name }}_network
+
+{% endfor %}
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: {{ project_name }}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - {{ project_name }}_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - {{ project_name }}_network
+
+volumes:
+  postgres_data:
+
+networks:
+  {{ project_name }}_network:
+    driver: bridge
