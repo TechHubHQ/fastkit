@@ -1,0 +1,9 @@
+from fastapi import FastAPI
+
+
+def get_application() -> FastAPI:
+    app = FastAPI(title="{{ title }}")
+    return app
+
+
+app = get_application()

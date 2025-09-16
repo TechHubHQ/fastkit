@@ -1,7 +1,8 @@
 import os
+import typer
 from pathlib import Path
 from typing import Optional
-import typer
+from InquirerPy import inquirer
 from rich.console import Console
 
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
@@ -12,14 +13,19 @@ console = Console()
 
 
 def _prompt_with_choices(prompt_text: str, choices: list[str], default: str | None = None) -> str:
-    choices_display = "/".join(choices)
-    while True:
-        value = typer.prompt(
-            f"{prompt_text} [{choices_display}]", default=default or choices[0]).strip().lower()
-        if value in choices:
-            return value
-        console.print(
-            f"[red]Invalid choice. Please choose one of: {', '.join(choices)}[/red]")
+    """
+    Prompt the user to select from a list of choices using an interactive menu
+    (arrow keys + enter).
+    """
+    value = inquirer.select(
+        message=prompt_text,
+        choices=choices,
+        default=default or choices[0],
+        pointer="👉",
+        qmark="❓",
+    ).execute()
+
+    return value.lower()
 
 
 def _normalize_db_choice(db_choice: str) -> str:
@@ -44,6 +50,16 @@ def _normalize_cache_choice(cache_choice: str) -> str:
         "none": "none",
     }
     return mapping.get(cache_choice.lower(), cache_choice.lower())
+
+
+def _normalize_architecture_choice(architecture: str) -> str:
+    mapping = {
+        "fullstack application": "fullstack",
+        "microservices architecture": "microservices",
+        "rest api service": "rest-apis",
+        "onion architecture": "onion-architecture",
+    }
+    return mapping.get(architecture.lower(), architecture.lower())
 
 
 def create_project(
@@ -83,6 +99,19 @@ def create_project(
             typer.echo("Aborting.")
             raise typer.Exit(code=1)
 
+    architecture = _normalize_architecture_choice(
+        _prompt_with_choices(
+            "Select project architecture",
+            [
+                "Fullstack Application",
+                "Microservices Architecture",
+                "REST API Service",
+                "Onion Architecture"
+            ],
+            default="REST API Service",
+        )
+    )
+
     needs_auth = typer.confirm(
         "Do you want to include authentication setup?", default=False)
     auth_type = "none"
@@ -113,6 +142,7 @@ def create_project(
     console.print()
     console.print("[bold]Summary[/bold]")
     console.print(f"  Project: [cyan]{project_name}[/cyan]")
+    console.print(f"  Architecture: [cyan]{architecture}[/cyan]")
     console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
     console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
     console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
@@ -129,6 +159,7 @@ def create_project(
     scaffold_project_structure(
         base_path=target_dir,
         project_name=project_name,
+        architecture=architecture,
         auth_type=auth_type,
         db_choice=db_choice,
         cache_choice=cache_choice,
