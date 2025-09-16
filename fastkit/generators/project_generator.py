@@ -56,31 +56,49 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
 
     if auth_type != "none":
         _ensure_dir(auth_dir)
-        _render_and_write("service/app/auth/__init__.py.jinja", auth_dir / "__init__.py", {})
-        _render_and_write("service/app/auth/routes.py.jinja", auth_dir / "routes.py", {})
+        _render_and_write("service/app/auth/__init__.py.jinja",
+                          auth_dir / "__init__.py", {})
+        _render_and_write("service/app/auth/routes.py.jinja",
+                          auth_dir / "routes.py", {})
 
     if db_choice != "none":
         _ensure_dir(db_dir)
-        _render_and_write("service/app/db/__init__.py.jinja", db_dir / "__init__.py", {})
-        _render_and_write("service/app/db/session.py.jinja", db_dir / "session.py", {})
+        _render_and_write("service/app/db/__init__.py.jinja",
+                          db_dir / "__init__.py", {})
+        _render_and_write("service/app/db/session.py.jinja",
+                          db_dir / "session.py", {})
 
     if cache_choice != "none":
         _ensure_dir(cache_dir)
-        _render_and_write("service/app/cache/__init__.py.jinja", cache_dir / "__init__.py", {})
-        _render_and_write("service/app/cache/client.py.jinja", cache_dir / "client.py", {})
+        _render_and_write("service/app/cache/__init__.py.jinja",
+                          cache_dir / "__init__.py", {})
+        _render_and_write("service/app/cache/client.py.jinja",
+                          cache_dir / "client.py", {})
 
-    _render_and_write("service/app/__init__.py.jinja", src_app / "__init__.py", {})
-    _render_and_write("service/app/main.py.jinja", src_app / "main.py", {"title": service_name})
-    _render_and_write("service/app/core/__init__.py.jinja", core_dir / "__init__.py", {})
-    _render_and_write("service/app/core/config.py.jinja", core_dir / "config.py", {})
-    _render_and_write("service/app/api/__init__.py.jinja", api_dir / "__init__.py", {})
-    _render_and_write("service/app/api/v1/__init__.py.jinja", v1_dir / "__init__.py", {})
-    _render_and_write("service/app/api/v1/routes.py.jinja", v1_dir / "routes.py", {})
-    _render_and_write("service/app/models/__init__.py.jinja", models_dir / "__init__.py", {})
-    _render_and_write("service/app/services/__init__.py.jinja", services_dir / "__init__.py", {})
-    _render_and_write("service/app/repositories/__init__.py.jinja", repositories_dir / "__init__.py", {})
-    _render_and_write("service/tests/__init__.py.jinja", tests_dir / "__init__.py", {})
-    _render_and_write("service/infra/.gitkeep.jinja", infra_dir / ".gitkeep", {})
+    _render_and_write("service/app/__init__.py.jinja",
+                      src_app / "__init__.py", {})
+    _render_and_write("service/app/main.py.jinja", src_app /
+                      "main.py", {"title": service_name})
+    _render_and_write("service/app/core/__init__.py.jinja",
+                      core_dir / "__init__.py", {})
+    _render_and_write("service/app/core/config.py.jinja",
+                      core_dir / "config.py", {})
+    _render_and_write("service/app/api/__init__.py.jinja",
+                      api_dir / "__init__.py", {})
+    _render_and_write("service/app/api/v1/__init__.py.jinja",
+                      v1_dir / "__init__.py", {})
+    _render_and_write("service/app/api/v1/routes.py.jinja",
+                      v1_dir / "routes.py", {})
+    _render_and_write("service/app/models/__init__.py.jinja",
+                      models_dir / "__init__.py", {})
+    _render_and_write("service/app/services/__init__.py.jinja",
+                      services_dir / "__init__.py", {})
+    _render_and_write("service/app/repositories/__init__.py.jinja",
+                      repositories_dir / "__init__.py", {})
+    _render_and_write("service/tests/__init__.py.jinja",
+                      tests_dir / "__init__.py", {})
+    _render_and_write("service/infra/.gitkeep.jinja",
+                      infra_dir / ".gitkeep", {})
 
 
 def scaffold_project_structure(
@@ -119,9 +137,12 @@ def scaffold_project_structure(
         frontend_src = frontend_root / "src"
         _ensure_dir(frontend_root)
         _ensure_dir(frontend_src)
-        _render_and_write("project/fullstack/frontend/src/main.ts.jinja", frontend_src / "main.ts", {})
-        _render_and_write("project/fullstack/frontend/package.json.jinja", frontend_root / "package.json", {"project_name": project_name})
-        _render_and_write("project/fullstack/frontend/tsconfig.json.jinja", frontend_root / "tsconfig.json", {})
+        _render_and_write(
+            "project/fullstack/frontend/src/main.ts.jinja", frontend_src / "main.ts", {})
+        _render_and_write("project/fullstack/frontend/package.json.jinja",
+                          frontend_root / "package.json", {"project_name": project_name})
+        _render_and_write("project/fullstack/frontend/tsconfig.json.jinja",
+                          frontend_root / "tsconfig.json", {})
 
     elif architecture == "microservices":
         # Handle Microservices architecture
@@ -144,12 +165,18 @@ def scaffold_project_structure(
             _ensure_dir(d)
 
         # Create __init__.py files
-        _render_and_write("service/app/__init__.py.jinja", application_dir / "__init__.py", {})
-        _render_and_write("service/app/__init__.py.jinja", domain_dir / "__init__.py", {})
-        _render_and_write("service/app/__init__.py.jinja", infrastructure_dir / "__init__.py", {})
-        _render_and_write("service/app/__init__.py.jinja", presentation_dir / "__init__.py", {})
+        _render_and_write("service/app/__init__.py.jinja",
+                          application_dir / "__init__.py", {})
+        _render_and_write("service/app/__init__.py.jinja",
+                          domain_dir / "__init__.py", {})
+        _render_and_write("service/app/__init__.py.jinja",
+                          infrastructure_dir / "__init__.py", {})
+        _render_and_write("service/app/__init__.py.jinja",
+                          presentation_dir / "__init__.py", {})
 
     # UV/pyproject setup and top-level files
-    _render_and_write("project/pyproject.toml.jinja", app_root / "pyproject.toml", {"project_name": project_name})
-    _render_and_write("project/README.md.jinja", app_root / "README.md", {"project_name": project_name})
+    _render_and_write("project/pyproject.toml.jinja", app_root /
+                      "pyproject.toml", {"project_name": project_name})
+    _render_and_write("project/README.md.jinja", app_root /
+                      "README.md", {"project_name": project_name})
     _render_and_write("project/.gitignore.jinja", app_root / ".gitignore", {})
