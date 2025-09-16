@@ -32,7 +32,7 @@ def get_loading_spinner():
     Returns:
         list: List of spinner frames
     """
-    return ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    return ["-", "\\", "|", "/"]
 
 
 def get_success_icon():
@@ -42,8 +42,7 @@ def get_success_icon():
     Returns:
         str: Success icon
     """
-    return "✅"
-
+    return "OK"
 
 def get_error_icon():
     """
@@ -52,8 +51,7 @@ def get_error_icon():
     Returns:
         str: Error icon
     """
-    return "❌"
-
+    return "ERR"
 
 def get_warning_icon():
     """
@@ -62,4 +60,4 @@ def get_warning_icon():
     Returns:
         str: Warning icon
     """
-    return "⚠️"
+    return "WARN"
