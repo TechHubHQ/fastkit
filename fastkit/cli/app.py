@@ -6,6 +6,7 @@ from rich.text import Text
 from fastkit.shared.ui import *
 from fastkit.cli.commands.greet import greet
 from fastkit.cli.commands.version import version
+from fastkit.cli.commands.create_project import create_project
 
 app = typer.Typer()
 console = Console()
@@ -86,3 +87,5 @@ def main(
 # Register commands
 app.command(help="Greet someone with style")(greet)
 app.command(help="Show FastKit version information")(version)
+app.command(name="create-project",
+            help="Create a new FastAPI project via an interactive wizard")(create_project)
