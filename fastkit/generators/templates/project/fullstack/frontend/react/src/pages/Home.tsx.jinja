@@ -1,0 +1,40 @@
+import React from 'react'
+
+const Home{% if is_typescript %}: React.FC{% endif %} = () => {
+  return (
+    <div className="text-center">
+      <h1 className="text-4xl font-bold text-gray-900 mb-8">
+        Welcome to {{ project_name }}
+      </h1>
+      <p className="text-xl text-gray-600 mb-8">
+        A modern fullstack application built with FastAPI and React
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">FastAPI Backend</h3>
+          <p className="text-gray-600">
+            High-performance Python backend with automatic API documentation
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">React Frontend</h3>
+          <p className="text-gray-600">
+            Modern React application with {{ language }} and {{ build_tool }}
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Full Integration</h3>
+          <p className="text-gray-600">
+            {% if has_auth %}
+            Complete authentication system and API integration
+            {% else %}
+            Ready for API integration and feature development
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Home

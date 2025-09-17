@@ -1,0 +1,23 @@
+export interface User {
+  id: string
+  email: string
+  name?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+  user: User
+}
+
+export interface ApiError {
+  detail: string
+  type: string
+}
+
+export interface ApiResponse<T> {
+  data: T
+  message?: string
+}

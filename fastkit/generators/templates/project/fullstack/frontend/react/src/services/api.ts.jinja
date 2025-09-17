@@ -1,0 +1,59 @@
+import axios{% if is_typescript %}, { AxiosInstance, AxiosResponse }{% endif %} from 'axios'
+import { AuthService } from '../auth/AuthService'
+
+class ApiService {
+  {% if is_typescript %}private {% endif %}api{% if is_typescript %}: AxiosInstance{% endif %}
+
+  constructor() {
+    this.api = axios.create({
+      baseURL: '{{ backend_url }}/api/v1',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    // Request interceptor to add auth token
+    this.api.interceptors.request.use(
+      (config) => {
+        const token = AuthService.getToken()
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+        }
+        return config
+      },
+      (error) => {
+        return Promise.reject(error)
+      }
+    )
+
+    // Response interceptor to handle auth errors
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          AuthService.logout()
+          window.location.href = '/login'
+        }
+        return Promise.reject(error)
+      }
+    )
+  }
+
+  async get{% if is_typescript %}<T>{% endif %}(url{% if is_typescript %}: string{% endif %}){% if is_typescript %}: Promise<AxiosResponse<T>>{% endif %} {
+    return this.api.get{% if is_typescript %}<T>{% endif %}(url)
+  }
+
+  async post{% if is_typescript %}<T>{% endif %}(url{% if is_typescript %}: string{% endif %}, data{% if is_typescript %}?: any{% endif %}){% if is_typescript %}: Promise<AxiosResponse<T>>{% endif %} {
+    return this.api.post{% if is_typescript %}<T>{% endif %}(url, data)
+  }
+
+  async put{% if is_typescript %}<T>{% endif %}(url{% if is_typescript %}: string{% endif %}, data{% if is_typescript %}?: any{% endif %}){% if is_typescript %}: Promise<AxiosResponse<T>>{% endif %} {
+    return this.api.put{% if is_typescript %}<T>{% endif %}(url, data)
+  }
+
+  async delete{% if is_typescript %}<T>{% endif %}(url{% if is_typescript %}: string{% endif %}){% if is_typescript %}: Promise<AxiosResponse<T>>{% endif %} {
+    return this.api.delete{% if is_typescript %}<T>{% endif %}(url)
+  }
+}
+
+export const api = new ApiService()

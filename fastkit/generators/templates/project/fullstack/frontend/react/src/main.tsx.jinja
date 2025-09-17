@@ -1,0 +1,19 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './App.css'
+{% if has_auth %}
+import { AuthProvider } from './auth/AuthContext'
+{% endif %}
+
+ReactDOM.createRoot(document.getElementById('root'){% if is_javascript %}{% else %}!{% endif %}).render(
+  <React.StrictMode>
+    {% if has_auth %}
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+    {% else %}
+    <App />
+    {% endif %}
+  </React.StrictMode>,
+)

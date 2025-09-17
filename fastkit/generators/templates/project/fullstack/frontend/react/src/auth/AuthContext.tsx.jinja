@@ -1,0 +1,81 @@
+import React, { createContext, useContext, useState, useEffect{% if is_typescript %}, ReactNode{% endif %} } from 'react'
+import { AuthService } from './AuthService'
+{% if is_typescript %}import { User } from '../types'
+
+interface AuthContextType {
+  user: User | null
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => void
+  loading: boolean
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined){% else %}
+
+const AuthContext = createContext(undefined){% endif %}
+
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+{% if is_typescript %}
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+{% else %}
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+{% endif %}
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const currentUser = await AuthService.getCurrentUser()
+        setUser(currentUser)
+      } catch (error) {
+        console.error('Failed to get current user:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+  }, [])
+
+  const login = async (email{% if is_typescript %}: string{% endif %}, password{% if is_typescript %}: string{% endif %}){% if is_typescript %}: Promise<boolean>{% endif %} => {
+    try {
+      const response = await AuthService.login(email, password)
+      setUser(response.user)
+      return true
+    } catch (error) {
+      console.error('Login failed:', error)
+      return false
+    }
+  }
+
+  const logout = () => {
+    AuthService.logout()
+    setUser(null)
+  }
+
+  const value = {
+    user,
+    login,
+    logout,
+    loading
+  }
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  )
+}

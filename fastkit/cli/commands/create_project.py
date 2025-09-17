@@ -171,6 +171,53 @@ def create_project(
         )
     )
 
+    frontend_config = {}
+    if architecture == "fullstack":
+        console.print("\n[bold]Frontend Configuration[/bold]")
+        
+        frontend_framework = _prompt_with_choices(
+            "Select frontend framework",
+            ["React", "Angular", "Vue", "Vanilla"],
+            default="React",
+        )
+        
+        # Build tool selection based on framework
+        if frontend_framework.lower() == "react":
+            build_tool = _prompt_with_choices(
+                "Select build tool for React",
+                ["Vite", "Create React App"],
+                default="Vite",
+            )
+            # Normalize build tool name
+            build_tool = "create-react-app" if build_tool.lower() == "create react app" else build_tool.lower()
+        elif frontend_framework.lower() == "angular":
+            build_tool = "angular-cli"  # Angular uses CLI by default
+        elif frontend_framework.lower() == "vue":
+            build_tool = _prompt_with_choices(
+                "Select build tool for Vue",
+                ["Vite", "Webpack"],
+                default="Vite",
+            ).lower()
+        else:  # Vanilla
+            build_tool = _prompt_with_choices(
+                "Select build tool for Vanilla JS/TS",
+                ["Vite", "Webpack"],
+                default="Vite",
+            ).lower()
+        
+        # Language selection
+        language = _prompt_with_choices(
+            "Select language",
+            ["TypeScript", "JavaScript"],
+            default="TypeScript",
+        ).lower()
+        
+        frontend_config = {
+            "framework": frontend_framework.lower(),
+            "build_tool": build_tool,
+            "language": language,
+        }
+
     needs_auth = typer.confirm(
         "Do you want to include authentication setup?", default=False)
     auth_type = "none"
@@ -202,13 +249,15 @@ def create_project(
     architecture_config = {}
     if architecture == "microservices":
         architecture_config = _get_microservices_config()
-    elif architecture == "onion-architecture":
+    elif architecture == "onion_architecture":
         architecture_config = _get_onion_architecture_config()
 
     console.print()
     console.print("[bold]Summary[/bold]")
     console.print(f"  Project: [cyan]{project_name}[/cyan]")
     console.print(f"  Architecture: [cyan]{architecture}[/cyan]")
+    if architecture == "fullstack":
+        console.print(f"  Frontend: [cyan]{frontend_config['framework']} ({frontend_config['build_tool']}) - {frontend_config['language']}[/cyan]")
     console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
     console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
     console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
@@ -234,7 +283,9 @@ def create_project(
         db_choice=db_choice,
         cache_choice=cache_choice,
         architecture_config=architecture_config,
+        frontend_config=frontend_config,
     )
 
     console.print(
         f"\n[bold bright_green]Project structure created at[/bold bright_green] [underline]{target_dir}[/underline]")
+

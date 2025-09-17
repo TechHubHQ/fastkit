@@ -1,0 +1,34 @@
+class ApiService {
+  private baseURL = '{{ backend_url }}/api/v1'
+
+  async get<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      headers: this.getHeaders(),
+    })
+    return response.json()
+  }
+
+  async post<T>(endpoint: string, data: any): Promise<T> {
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    })
+    return response.json()
+  }
+
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    return headers
+  }
+}
+
+export const api = new ApiService()

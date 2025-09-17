@@ -1,0 +1,55 @@
+import { api } from '../services/api'
+
+export interface User {
+  id: string
+  email: string
+  name?: string
+}
+
+export interface LoginResponse {
+  access_token: string
+  token_type: string
+  user: User
+}
+
+export class AuthService {
+  private static readonly TOKEN_KEY = 'auth_token'
+
+  static async login(email: string, password: string): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>('/auth/login', {
+      email,
+      password
+    })
+    
+    if (response.data.access_token) {
+      localStorage.setItem(this.TOKEN_KEY, response.data.access_token)
+    }
+    
+    return response.data
+  }
+
+  static async getCurrentUser(): Promise<User | null> {
+    const token = this.getToken()
+    if (!token) return null
+
+    try {
+      const response = await api.get<User>('/auth/me')
+      return response.data
+    } catch (error) {
+      this.logout()
+      return null
+    }
+  }
+
+  static logout(): void {
+    localStorage.removeItem(this.TOKEN_KEY)
+  }
+
+  static getToken(): string | null {
+    return localStorage.getItem(this.TOKEN_KEY)
+  }
+
+  static isAuthenticated(): boolean {
+    return !!this.getToken()
+  }
+}

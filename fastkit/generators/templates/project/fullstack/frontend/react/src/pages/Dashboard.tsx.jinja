@@ -1,0 +1,38 @@
+import React from 'react'
+import { useAuth } from '../auth/AuthContext'
+
+const Dashboard{% if is_typescript %}: React.FC{% endif %} = () => {
+  const { user } = useAuth()
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+      
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Welcome back!</h2>
+        <p className="text-gray-600">
+          Hello {user?.email}, you are successfully logged in.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">API Status</h3>
+          <p className="text-green-600">Connected</p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">User Profile</h3>
+          <p className="text-gray-600">Manage your account settings</p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2">Quick Actions</h3>
+          <p className="text-gray-600">Access frequently used features</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Dashboard

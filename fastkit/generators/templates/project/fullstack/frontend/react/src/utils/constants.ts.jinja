@@ -1,0 +1,23 @@
+export const API_BASE_URL = '{{ backend_url }}'
+
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  DASHBOARD: '/dashboard',
+}{% if is_typescript %} as const{% endif %}
+
+export const AUTH_STORAGE_KEY = 'auth_token'
+
+export const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+    ME: '/auth/me',
+  },
+  USERS: {
+    LIST: '/users',
+    CREATE: '/users',
+    UPDATE: {% if is_typescript %}(id: string) => `/users/${id}`{% else %}(id) => `/users/${id}`{% endif %},
+    DELETE: {% if is_typescript %}(id: string) => `/users/${id}`{% else %}(id) => `/users/${id}`{% endif %},
+  },
+}{% if is_typescript %} as const{% endif %}

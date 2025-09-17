@@ -1,0 +1,41 @@
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+{% if is_typescript %}import tseslint from '@typescript-eslint/eslint-plugin'
+import tsparser from '@typescript-eslint/parser'{% endif %}
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx{% if is_typescript %},ts,tsx{% endif %}}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      {% if is_typescript %}parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },{% else %}parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },{% endif %}
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+      {% if is_typescript %}'@typescript-eslint': tseslint,{% endif %}
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      {% if is_typescript %}...tseslint.configs.recommended.rules,{% endif %}
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]

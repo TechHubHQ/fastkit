@@ -1,0 +1,46 @@
+import '../css/styles.css'
+{% if has_auth %}
+import { AuthService } from './auth/authService'
+{% endif %}
+
+class App {
+  constructor() {
+    this.init()
+  }
+
+  private init() {
+    console.log('{{ project_name }} initialized')
+    this.setupEventListeners()
+    {% if has_auth %}
+    this.checkAuth()
+    {% endif %}
+  }
+
+  private setupEventListeners() {
+    // Add your event listeners here
+  }
+
+  {% if has_auth %}
+  private async checkAuth() {
+    const isAuthenticated = await AuthService.isAuthenticated()
+    if (isAuthenticated) {
+      this.showDashboard()
+    } else {
+      this.showLogin()
+    }
+  }
+
+  private showDashboard() {
+    // Show dashboard content
+  }
+
+  private showLogin() {
+    // Show login form
+  }
+  {% endif %}
+}
+
+// Initialize the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  new App()
+})
