@@ -10,16 +10,17 @@ router = APIRouter()
 
 # Service endpoints configuration
 SERVICE_ENDPOINTS = {
-{% for service in services %}
+{ % for service in services % }
     "{{ service }}": "http://{{ service }}:8000",
-{% endfor %}
+{ % endfor % }
 }
 
 
 async def forward_request(service_name: str, path: str, method: str, **kwargs) -> Dict[str, Any]:
     """Forward request to the appropriate microservice."""
     if service_name not in SERVICE_ENDPOINTS:
-        raise HTTPException(status_code=404, detail=f"Service {service_name} not found")
+        raise HTTPException(
+            status_code=404, detail=f"Service {service_name} not found")
 
     service_url = SERVICE_ENDPOINTS[service_name]
     url = f"{service_url}{path}"
@@ -29,14 +30,17 @@ async def forward_request(service_name: str, path: str, method: str, **kwargs) -
         return response.json()
 
 
-{% for service in services %}
+{ % for service in services % }
+
+
 @router.api_route("/{{ service }}/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def {{ service.replace('-', '_') }}_proxy(path: str, request):
+async def {{service.replace('-', '_')}}_proxy(path: str, request):
     """Proxy requests to {{ service }} service."""
     method = request.method
     return await forward_request("{{ service }}", f"/{path}", method)
 
-{% endfor %}
+{ % endfor % }
+
 
 @router.get("/health")
 async def gateway_health():

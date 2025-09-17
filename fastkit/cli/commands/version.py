@@ -13,7 +13,8 @@ def version():
 
     # Main version display
     console.print()
-    console.print(f"[bold bright_cyan]FastKit CLI[/bold bright_cyan] [bright_green]v{__version__}[/bright_green]")
+    console.print(
+        f"[bold bright_cyan]FastKit CLI[/bold bright_cyan] [bright_green]v{__version__}[/bright_green]")
     console.print()
 
     # System information
@@ -34,6 +35,8 @@ def version():
 
     # Links
     console.print("[bold bright_cyan]Links:[/bold bright_cyan]")
-    console.print("  Repository: [bright_blue underline]https://github.com/TechHubHQ/fastkit[/bright_blue underline]")
-    console.print("  Issues:     [bright_blue underline]https://github.com/TechHubHQ/fastkit/issues[/bright_blue underline]")
+    console.print(
+        "  Repository: [bright_blue underline]https://github.com/TechHubHQ/fastkit[/bright_blue underline]")
+    console.print(
+        "  Issues:     [bright_blue underline]https://github.com/TechHubHQ/fastkit/issues[/bright_blue underline]")
     console.print()

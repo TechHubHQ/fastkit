@@ -125,39 +125,38 @@ This project follows REST API best practices with a clean, organized structure:
 5. Access API at `http://localhost:8000`
 
 {% elif architecture == 'fullstack' %}
-### Fullstack Application
+### Fullstack Backend Application
 
-This project includes both backend and frontend components:
+This project provides a backend API service designed for fullstack applications:
 
 ```
 {{ project_name }}/
-|-- backend/                 # FastAPI backend
-|   |-- app/
-|   |   |-- api/
-|   |   |-- core/
-|   |   |-- models/
-|   |   +-- main.py
-|   +-- tests/
-|-- frontend/                # Frontend application
-|   |-- src/
-|   |   +-- main.ts
-|   |-- package.json
-|   +-- tsconfig.json
+|-- app/
+|   |-- api/
+|   |   +-- v1/              # API version 1
+|   |       +-- routes.py    # API endpoints
+|   |-- core/                # Core configuration
+|   |-- models/              # Data models
+|   |-- services/            # Business logic
+|   |-- repositories/        # Data access layer
+|   |-- middleware/          # Custom middleware
+|   |-- schemas/             # Request/Response schemas
+|   |-- utils/               # Utilities and helpers
+|   |-- auth/                # Authentication logic
+|   |-- db/                  # Database configuration
+|   |-- cache/               # Caching logic
+|   +-- main.py              # Application entry point
+|-- tests/                   # Test files
+|-- infra/                   # Infrastructure files
 +-- README.md
 ```
 
 **Getting Started:**
 
-Backend:
-1. `cd {{ project_name }}/backend`
+1. `cd {{ project_name }}`
 2. `uv venv && source .venv/bin/activate`
 3. `uv pip install -e .`
 4. `uvicorn app.main:app --reload`
-
-Frontend:
-1. `cd {{ project_name }}/frontend`
-2. `npm install`
-3. `npm run dev`
 
 {% endif %}
 
@@ -234,9 +233,9 @@ pytest --cov=app
 - **Scalability**: Can handle high loads with proper deployment
 - **Maintainability**: Clear organization of code
 {% elif architecture == 'fullstack' %}
-- **Full Control**: Complete control over both frontend and backend
-- **Rapid Development**: Everything in one place
-- **Consistency**: Shared types and models between frontend and backend
+- **API-First Design**: Built specifically for frontend integration
+- **Rapid Development**: Optimized structure for fullstack development
+- **Flexibility**: Easy to integrate with any frontend framework
 {% endif %}
 
 ## Contributing

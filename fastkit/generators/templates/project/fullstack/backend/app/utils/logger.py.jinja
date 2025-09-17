@@ -14,7 +14,7 @@ def setup_logging(
 ) -> None:
     """
     Set up application logging configuration.
-    
+
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         format_string: Custom format string for log messages
@@ -25,7 +25,7 @@ def setup_logging(
             format_string = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         else:
             format_string = "%(name)s - %(levelname)s - %(message)s"
-    
+
     logging.basicConfig(
         level=getattr(logging, level.upper()),
         format=format_string,
@@ -38,10 +38,10 @@ def setup_logging(
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance with the specified name.
-    
+
     Args:
         name: Logger name (typically __name__)
-        
+
     Returns:
         Logger instance
     """

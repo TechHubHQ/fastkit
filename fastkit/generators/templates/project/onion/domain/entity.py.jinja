@@ -4,11 +4,11 @@ This represents the core business entity in the domain layer.
 """
 from dataclasses import dataclass
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
-class {{ entity_name }}:
+class {{entity_name}}:
     """{{ entity_name }} entity representing the core business object."""
 
     id: Optional[int] = None
@@ -18,13 +18,13 @@ class {{ entity_name }}:
     def __post_init__(self):
         """Post-initialization logic."""
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = datetime.now(timezone.utc)
         if self.updated_at is None:
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
 
     def update_timestamp(self):
         """Update the last modified timestamp."""
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
 
     def is_new(self) -> bool:
         """Check if this is a new entity (not persisted yet)."""

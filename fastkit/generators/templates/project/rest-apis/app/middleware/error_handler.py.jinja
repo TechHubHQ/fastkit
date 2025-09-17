@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     """Middleware to handle errors globally."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable):
         try:
             response = await call_next(request)
@@ -33,7 +33,8 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             logger.exception("Unhandled exception occurred")
             return JSONResponse(
                 status_code=500,
-                content={"detail": "Internal server error", "type": "server_error"}
+                content={"detail": "Internal server error",
+                         "type": "server_error"}
             )
 
 

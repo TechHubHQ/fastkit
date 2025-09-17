@@ -65,30 +65,30 @@ def _normalize_architecture_choice(architecture: str) -> str:
 def _get_microservices_config() -> dict:
     """Get microservices-specific configuration from user."""
     console.print("\n[bold]Microservices Configuration[/bold]")
-    
+
     # Ask for number of services
     num_services = typer.prompt(
-        "How many services do you want to create?", 
-        type=int, 
+        "How many services do you want to create?",
+        type=int,
         default=2
     )
-    
+
     services = []
     console.print(f"\nEnter names for {num_services} services:")
-    
+
     for i in range(num_services):
         service_name = typer.prompt(
-            f"Service {i+1} name", 
+            f"Service {i+1} name",
             default=f"service-{i+1}"
         ).strip().lower().replace(" ", "-")
         services.append(service_name)
-    
+
     # Ask about API Gateway
     include_gateway = typer.confirm(
-        "Include API Gateway service?", 
+        "Include API Gateway service?",
         default=True
     )
-    
+
     return {
         "services": services,
         "include_gateway": include_gateway,
@@ -99,21 +99,22 @@ def _get_microservices_config() -> dict:
 def _get_onion_architecture_config() -> dict:
     """Get onion architecture-specific configuration from user."""
     console.print("\n[bold]Onion Architecture Configuration[/bold]")
-    
+
     # Ask about domain complexity
     domain_entities = typer.prompt(
-        "Enter main domain entities (comma-separated)", 
+        "Enter main domain entities (comma-separated)",
         default="User,Product"
     ).strip()
-    
-    entities = [entity.strip() for entity in domain_entities.split(",") if entity.strip()]
-    
+
+    entities = [entity.strip()
+                for entity in domain_entities.split(",") if entity.strip()]
+
     # Ask about use cases
     include_cqrs = typer.confirm(
-        "Include CQRS pattern (Command/Query separation)?", 
+        "Include CQRS pattern (Command/Query separation)?",
         default=False
     )
-    
+
     return {
         "entities": entities,
         "include_cqrs": include_cqrs,
@@ -171,53 +172,6 @@ def create_project(
         )
     )
 
-    frontend_config = {}
-    if architecture == "fullstack":
-        console.print("\n[bold]Frontend Configuration[/bold]")
-        
-        frontend_framework = _prompt_with_choices(
-            "Select frontend framework",
-            ["React", "Angular", "Vue", "Vanilla"],
-            default="React",
-        )
-        
-        # Build tool selection based on framework
-        if frontend_framework.lower() == "react":
-            build_tool = _prompt_with_choices(
-                "Select build tool for React",
-                ["Vite", "Create React App"],
-                default="Vite",
-            )
-            # Normalize build tool name
-            build_tool = "create-react-app" if build_tool.lower() == "create react app" else build_tool.lower()
-        elif frontend_framework.lower() == "angular":
-            build_tool = "angular-cli"  # Angular uses CLI by default
-        elif frontend_framework.lower() == "vue":
-            build_tool = _prompt_with_choices(
-                "Select build tool for Vue",
-                ["Vite", "Webpack"],
-                default="Vite",
-            ).lower()
-        else:  # Vanilla
-            build_tool = _prompt_with_choices(
-                "Select build tool for Vanilla JS/TS",
-                ["Vite", "Webpack"],
-                default="Vite",
-            ).lower()
-        
-        # Language selection
-        language = _prompt_with_choices(
-            "Select language",
-            ["TypeScript", "JavaScript"],
-            default="TypeScript",
-        ).lower()
-        
-        frontend_config = {
-            "framework": frontend_framework.lower(),
-            "build_tool": build_tool,
-            "language": language,
-        }
-
     needs_auth = typer.confirm(
         "Do you want to include authentication setup?", default=False)
     auth_type = "none"
@@ -256,15 +210,13 @@ def create_project(
     console.print("[bold]Summary[/bold]")
     console.print(f"  Project: [cyan]{project_name}[/cyan]")
     console.print(f"  Architecture: [cyan]{architecture}[/cyan]")
-    if architecture == "fullstack":
-        console.print(f"  Frontend: [cyan]{frontend_config['framework']} ({frontend_config['build_tool']}) - {frontend_config['language']}[/cyan]")
     console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
     console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
     console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
-    
+
     if architecture_config:
         console.print(f"  Config:  [cyan]{architecture_config}[/cyan]")
-    
+
     console.print()
 
     proceed = typer.confirm(
@@ -283,9 +235,7 @@ def create_project(
         db_choice=db_choice,
         cache_choice=cache_choice,
         architecture_config=architecture_config,
-        frontend_config=frontend_config,
     )
 
     console.print(
         f"\n[bold bright_green]Project structure created at[/bold bright_green] [underline]{target_dir}[/underline]")
-

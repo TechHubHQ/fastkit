@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     """Middleware to handle errors globally."""
-    
+
     async def dispatch(self, request: Request, call_next: Callable):
         try:
             response = await call_next(request)
