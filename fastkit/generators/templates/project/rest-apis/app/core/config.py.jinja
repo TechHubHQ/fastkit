@@ -1,1 +1,68 @@
-# Placeholder for settings/config
+"""Application configuration."""
+
+import os
+from typing import List
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings."""
+
+    # Basic settings
+    PROJECT_NAME: str = "{{ project_name }}"
+    VERSION: str = "1.0.0"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    DEBUG: bool = os.getenv("DEBUG", "true").lower() == "true"
+
+    # API settings
+    API_V1_STR: str = "/api/v1"
+
+    # Security settings
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+
+    # CORS settings
+    ALLOWED_HOSTS: List[str] = ["*"]  # Configure this properly for production
+{% if db_choice != "none" %}
+
+    # Database settings
+{% if db_choice == "postgresql" %}
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql://user:password@localhost/{{ project_name }}_db"
+    )
+{% elif db_choice == "sqlite" %}
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "sqlite:///./{{ project_name }}.db"
+    )
+{% elif db_choice == "mysql" %}
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "mysql://user:password@localhost/{{ project_name }}_db"
+    )
+{% elif db_choice == "mongodb" %}
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "mongodb://localhost:27017/{{ project_name }}_db"
+    )
+{% endif %}
+{% endif %}
+{% if cache_choice != "none" %}
+
+    # Cache settings
+{% if cache_choice == "redis" %}
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CACHE_TTL: int = 300  # 5 minutes default TTL
+{% endif %}
+{% endif %}
+
+    # Logging settings
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
+    class Config:
+        case_sensitive = True
+        env_file = ".env"
+
+
+settings = Settings()

@@ -1,0 +1,36 @@
+"""Global application exceptions."""
+
+
+class AppException(Exception):
+    """Base application exception."""
+    pass
+
+
+class ValidationError(AppException):
+    """Raised when validation fails."""
+    pass
+
+
+class NotFoundError(AppException):
+    """Raised when resource is not found."""
+    pass
+
+
+class ConflictError(AppException):
+    """Raised when there's a conflict (e.g., duplicate resource)."""
+    pass
+
+
+class UnauthorizedError(AppException):
+    """Raised when user is not authorized."""
+    pass
+
+
+class ForbiddenError(AppException):
+    """Raised when user doesn't have permission."""
+    pass
+
+
+class ExternalServiceError(AppException):
+    """Raised when external service fails."""
+    pass

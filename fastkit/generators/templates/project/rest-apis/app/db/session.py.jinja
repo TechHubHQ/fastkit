@@ -1,1 +1,56 @@
-# Placeholder for DB session setup
+"""Database session management."""
+
+{% if db_choice != "none" -%}
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from app.core.config import settings
+
+# Create database engine
+{% if db_choice == "sqlite" -%}
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False}  # SQLite specific
+)
+{% else -%}
+engine = create_engine(settings.DATABASE_URL)
+{% endif -%}
+
+# Create session factory
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def get_db() -> Session:
+    """Get database session."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def create_tables():
+    """Create database tables."""
+    from app.db.base import Base
+    Base.metadata.create_all(bind=engine)
+
+
+def drop_tables():
+    """Drop database tables."""
+    from app.db.base import Base
+    Base.metadata.drop_all(bind=engine)
+{% else -%}
+# Database not configured
+def get_db():
+    """Placeholder for database session."""
+    raise NotImplementedError("Database not configured")
+
+
+def create_tables():
+    """Placeholder for creating tables."""
+    pass
+
+
+def drop_tables():
+    """Placeholder for dropping tables."""
+    pass
+{% endif -%}

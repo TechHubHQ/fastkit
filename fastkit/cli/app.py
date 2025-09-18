@@ -7,6 +7,7 @@ from fastkit.shared.ui import *
 from fastkit.cli.commands.greet import greet
 from fastkit.cli.commands.version import version
 from fastkit.cli.commands.create_project import create_project
+from fastkit.cli.commands.add_domain import add_domain
 
 app = typer.Typer()
 console = Console()
@@ -89,3 +90,5 @@ app.command(help="Greet someone with style")(greet)
 app.command(help="Show FastKit version information")(version)
 app.command(name="create-project",
             help="Create a new FastAPI project via an interactive wizard")(create_project)
+app.command(name="add-domain",
+            help="Add a new domain to an existing FastAPI project")(add_domain)

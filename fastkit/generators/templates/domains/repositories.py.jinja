@@ -1,0 +1,62 @@
+"""{{ domain_name.title() }} domain repository."""
+
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from .models import {{ domain_name.title() }}
+from .schemas import {{ domain_name.title() }}Create, {{ domain_name.title() }}Update
+
+
+class {{ domain_name.title() }}Repository:
+    """Repository for {{ domain_name.lower() }} data access."""
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get(self, {{ domain_name.lower() }}_id: int) -> Optional[{{ domain_name.title() }}]:
+        """Get a {{ domain_name.lower() }} by ID."""
+        return self.db.query({{ domain_name.title() }}).filter({{ domain_name.title() }}.id == {{ domain_name.lower() }}_id).first()
+
+    def get_by_name(self, name: str) -> Optional[{{ domain_name.title() }}]:
+        """Get a {{ domain_name.lower() }} by name."""
+        return self.db.query({{ domain_name.title() }}).filter({{ domain_name.title() }}.name == name).first()
+
+    def get_all(self, skip: int = 0, limit: int = 100, active_only: bool = True) -> List[{{ domain_name.title() }}]:
+        """Get all {{ domain_name.lower() }}s with pagination."""
+        query = self.db.query({{ domain_name.title() }})
+        if active_only:
+            query = query.filter({{ domain_name.title() }}.is_active == True)
+        return query.offset(skip).limit(limit).all()
+
+    def create(self, {{ domain_name.lower() }}_data: {{ domain_name.title() }}Create) -> {{ domain_name.title() }}:
+        """Create a new {{ domain_name.lower() }}."""
+        {{ domain_name.lower() }} = {{ domain_name.title() }}(**{{ domain_name.lower() }}_data.model_dump())
+        self.db.add({{ domain_name.lower() }})
+        self.db.commit()
+        self.db.refresh({{ domain_name.lower() }})
+        return {{ domain_name.lower() }}
+
+    def update(self, {{ domain_name.lower() }}_id: int, {{ domain_name.lower() }}_data: {{ domain_name.title() }}Update) -> Optional[{{ domain_name.title() }}]:
+        """Update a {{ domain_name.lower() }}."""
+        {{ domain_name.lower() }} = self.get({{ domain_name.lower() }}_id)
+        if {{ domain_name.lower() }}:
+            for field, value in {{ domain_name.lower() }}_data.model_dump(exclude_unset=True).items():
+                setattr({{ domain_name.lower() }}, field, value)
+            self.db.commit()
+            self.db.refresh({{ domain_name.lower() }})
+        return {{ domain_name.lower() }}
+
+    def delete(self, {{ domain_name.lower() }}_id: int) -> bool:
+        """Delete a {{ domain_name.lower() }}."""
+        {{ domain_name.lower() }} = self.get({{ domain_name.lower() }}_id)
+        if {{ domain_name.lower() }}:
+            self.db.delete({{ domain_name.lower() }})
+            self.db.commit()
+            return True
+        return False
+
+    def count(self, active_only: bool = True) -> int:
+        """Count {{ domain_name.lower() }}s."""
+        query = self.db.query({{ domain_name.title() }})
+        if active_only:
+            query = query.filter({{ domain_name.title() }}.is_active == True)
+        return query.count()

@@ -27,6 +27,129 @@ def _render_and_write(template_name: str, dest_path: Path, context: dict) -> Non
     dest_path.write_text(content, encoding='utf-8')
 
 
+def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType, template_prefix: str) -> None:
+    """Scaffold the new domain-based structure."""
+    context = {
+        "project_name": project_name,
+        "auth_type": auth_type,
+        "db_choice": db_choice,
+        "cache_choice": cache_choice
+    }
+
+    # Create main app structure
+    app_dir = base_path / "app"
+    _ensure_dir(app_dir)
+
+    # Core files
+    _render_and_write(f"project/{template_prefix}/app/__init__.py.jinja",
+                      app_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/main.py.jinja",
+                      app_dir / "main.py", context)
+
+    # Core directory
+    core_dir = app_dir / "core"
+    _ensure_dir(core_dir)
+    _render_and_write(f"project/{template_prefix}/app/core/__init__.py.jinja",
+                      core_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/core/config.py.jinja",
+                      core_dir / "config.py", context)
+    _render_and_write(f"project/{template_prefix}/app/core/dependencies.py.jinja",
+                      core_dir / "dependencies.py", context)
+    _render_and_write(f"project/{template_prefix}/app/core/security.py.jinja",
+                      core_dir / "security.py", context)
+
+    # API directory
+    api_dir = app_dir / "api"
+    v1_dir = api_dir / "v1"
+    _ensure_dir(v1_dir)
+    _render_and_write(f"project/{template_prefix}/app/api/__init__.py.jinja",
+                      api_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/api/v1/__init__.py.jinja",
+                      v1_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/api/v1/api.py.jinja",
+                      v1_dir / "api.py", context)
+
+    # Domains directory (empty initially)
+    domains_dir = app_dir / "domains"
+    _ensure_dir(domains_dir)
+    _render_and_write(f"project/{template_prefix}/app/domains/__init__.py.jinja",
+                      domains_dir / "__init__.py", context)
+
+    # Shared directory
+    shared_dir = app_dir / "shared"
+    middleware_dir = shared_dir / "middleware"
+    utils_dir = shared_dir / "utils"
+    _ensure_dir(middleware_dir)
+    _ensure_dir(utils_dir)
+
+    _render_and_write(f"project/{template_prefix}/app/shared/__init__.py.jinja",
+                      shared_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/shared/exceptions.py.jinja",
+                      shared_dir / "exceptions.py", context)
+
+    _render_and_write(f"project/{template_prefix}/app/shared/middleware/__init__.py.jinja",
+                      middleware_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/shared/middleware/error_handler.py.jinja",
+                      middleware_dir / "error_handler.py", context)
+    _render_and_write(f"project/{template_prefix}/app/shared/middleware/logging.py.jinja",
+                      middleware_dir / "logging.py", context)
+
+    _render_and_write(f"project/{template_prefix}/app/shared/utils/__init__.py.jinja",
+                      utils_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/shared/utils/logger.py.jinja",
+                      utils_dir / "logger.py", context)
+    _render_and_write(f"project/{template_prefix}/app/shared/utils/helpers.py.jinja",
+                      utils_dir / "helpers.py", context)
+
+    # Database directory
+    db_dir = app_dir / "db"
+    _ensure_dir(db_dir)
+    _render_and_write(f"project/{template_prefix}/app/db/__init__.py.jinja",
+                      db_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/app/db/base.py.jinja",
+                      db_dir / "base.py", context)
+    _render_and_write(f"project/{template_prefix}/app/db/session.py.jinja",
+                      db_dir / "session.py", context)
+
+    # Cache directory (if needed)
+    if cache_choice != "none":
+        cache_dir = app_dir / "cache"
+        _ensure_dir(cache_dir)
+        # We'll add cache templates later if needed
+
+    # Tests directory
+    tests_dir = base_path / "tests"
+    domains_tests_dir = tests_dir / "domains"
+    integration_tests_dir = tests_dir / "integration"
+    unit_tests_dir = tests_dir / "unit"
+
+    _ensure_dir(domains_tests_dir)
+    _ensure_dir(integration_tests_dir)
+    _ensure_dir(unit_tests_dir)
+
+    _render_and_write(f"project/{template_prefix}/tests/__init__.py.jinja",
+                      tests_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/tests/conftest.py.jinja",
+                      tests_dir / "conftest.py", context)
+
+    _render_and_write(f"project/{template_prefix}/tests/domains/__init__.py.jinja",
+                      domains_tests_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/tests/integration/__init__.py.jinja",
+                      integration_tests_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/tests/integration/test_api.py.jinja",
+                      integration_tests_dir / "test_api.py", context)
+    _render_and_write(f"project/{template_prefix}/tests/unit/__init__.py.jinja",
+                      unit_tests_dir / "__init__.py", context)
+    _render_and_write(f"project/{template_prefix}/tests/unit/test_core.py.jinja",
+                      unit_tests_dir / "test_core.py", context)
+
+    # Infra directory
+    infra_dir = base_path / "infra"
+    _ensure_dir(infra_dir)
+    _render_and_write(f"project/{template_prefix}/infra/.gitkeep.jinja",
+                      infra_dir / ".gitkeep", context)
+
+
 def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType, config: dict) -> None:
     """Scaffold a microservices architecture."""
     services_root = base_path / "services"
@@ -171,183 +294,8 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
 
 def _scaffold_rest_api_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
-    """Scaffold a REST API service using the new template structure."""
-    src_app = service_path / "app"
-    api_dir = src_app / "api"
-    v1_dir = api_dir / "v1"
-    core_dir = src_app / "core"
-    models_dir = src_app / "models"
-    services_dir = src_app / "services"
-    repositories_dir = src_app / "repositories"
-    middleware_dir = src_app / "middleware"
-    schemas_dir = src_app / "schemas"
-    utils_dir = src_app / "utils"
-    db_dir = src_app / "db"
-    auth_dir = src_app / "auth"
-    cache_dir = src_app / "cache"
-    tests_dir = service_path / "tests"
-    infra_dir = service_path / "infra"
-
-    for d in [
-        service_path,
-        src_app,
-        api_dir,
-        v1_dir,
-        core_dir,
-        models_dir,
-        services_dir,
-        repositories_dir,
-        middleware_dir,
-        schemas_dir,
-        utils_dir,
-        tests_dir,
-        infra_dir,
-    ]:
-        _ensure_dir(d)
-
-    if auth_type != "none":
-        _ensure_dir(auth_dir)
-        _render_and_write("project/rest-apis/app/auth/__init__.py.jinja",
-                          auth_dir / "__init__.py", {})
-        _render_and_write("project/rest-apis/app/auth/routes.py.jinja",
-                          auth_dir / "routes.py", {})
-
-    if db_choice != "none":
-        _ensure_dir(db_dir)
-        _render_and_write("project/rest-apis/app/db/__init__.py.jinja",
-                          db_dir / "__init__.py", {})
-        _render_and_write("project/rest-apis/app/db/session.py.jinja",
-                          db_dir / "session.py", {})
-
-    if cache_choice != "none":
-        _ensure_dir(cache_dir)
-        _render_and_write("project/rest-apis/app/cache/__init__.py.jinja",
-                          cache_dir / "__init__.py", {})
-        _render_and_write("project/rest-apis/app/cache/client.py.jinja",
-                          cache_dir / "client.py", {})
-
-    _render_and_write("project/rest-apis/app/__init__.py.jinja",
-                      src_app / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/main.py.jinja", src_app /
-                      "main.py", {"title": service_name})
-    _render_and_write("project/rest-apis/app/core/__init__.py.jinja",
-                      core_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/core/config.py.jinja",
-                      core_dir / "config.py", {})
-    _render_and_write("project/rest-apis/app/api/__init__.py.jinja",
-                      api_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/api/v1/__init__.py.jinja",
-                      v1_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/api/v1/routes.py.jinja",
-                      v1_dir / "routes.py", {})
-    _render_and_write("project/rest-apis/app/models/__init__.py.jinja",
-                      models_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/services/__init__.py.jinja",
-                      services_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/repositories/__init__.py.jinja",
-                      repositories_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/middleware/__init__.py.jinja",
-                      middleware_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/middleware/error_handler.py.jinja",
-                      middleware_dir / "error_handler.py", {})
-    _render_and_write("project/rest-apis/app/schemas/__init__.py.jinja",
-                      schemas_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/utils/__init__.py.jinja",
-                      utils_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/app/utils/logger.py.jinja",
-                      utils_dir / "logger.py", {})
-    _render_and_write("project/rest-apis/tests/__init__.py.jinja",
-                      tests_dir / "__init__.py", {})
-    _render_and_write("project/rest-apis/infra/.gitkeep.jinja",
-                      infra_dir / ".gitkeep", {})
-
-
-def _scaffold_fullstack_backend(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
-    """Scaffold a fullstack backend using fullstack-specific templates."""
-    src_app = service_path / "app"
-    api_dir = src_app / "api"
-    v1_dir = api_dir / "v1"
-    core_dir = src_app / "core"
-    models_dir = src_app / "models"
-    services_dir = src_app / "services"
-    repositories_dir = src_app / "repositories"
-    middleware_dir = src_app / "middleware"
-    schemas_dir = src_app / "schemas"
-    utils_dir = src_app / "utils"
-    db_dir = src_app / "db"
-    auth_dir = src_app / "auth"
-    cache_dir = src_app / "cache"
-    tests_dir = service_path / "tests"
-
-    for d in [
-        service_path,
-        src_app,
-        api_dir,
-        v1_dir,
-        core_dir,
-        models_dir,
-        services_dir,
-        repositories_dir,
-        middleware_dir,
-        schemas_dir,
-        utils_dir,
-        tests_dir,
-    ]:
-        _ensure_dir(d)
-
-    if auth_type != "none":
-        _ensure_dir(auth_dir)
-        _render_and_write("project/fullstack/backend/app/auth/__init__.py.jinja",
-                          auth_dir / "__init__.py", {})
-        _render_and_write("project/fullstack/backend/app/auth/routes.py.jinja",
-                          auth_dir / "routes.py", {})
-
-    if db_choice != "none":
-        _ensure_dir(db_dir)
-        _render_and_write("project/fullstack/backend/app/db/__init__.py.jinja",
-                          db_dir / "__init__.py", {})
-        _render_and_write("project/fullstack/backend/app/db/session.py.jinja",
-                          db_dir / "session.py", {})
-
-    if cache_choice != "none":
-        _ensure_dir(cache_dir)
-        _render_and_write("project/fullstack/backend/app/cache/__init__.py.jinja",
-                          cache_dir / "__init__.py", {})
-        _render_and_write("project/fullstack/backend/app/cache/client.py.jinja",
-                          cache_dir / "client.py", {})
-
-    _render_and_write("project/fullstack/backend/app/__init__.py.jinja",
-                      src_app / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/main.py.jinja", src_app /
-                      "main.py", {"title": service_name})
-    _render_and_write("project/fullstack/backend/app/core/__init__.py.jinja",
-                      core_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/core/config.py.jinja",
-                      core_dir / "config.py", {})
-    _render_and_write("project/fullstack/backend/app/api/__init__.py.jinja",
-                      api_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/api/v1/__init__.py.jinja",
-                      v1_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/api/v1/routes.py.jinja",
-                      v1_dir / "routes.py", {})
-    _render_and_write("project/fullstack/backend/app/models/__init__.py.jinja",
-                      models_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/services/__init__.py.jinja",
-                      services_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/repositories/__init__.py.jinja",
-                      repositories_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/middleware/__init__.py.jinja",
-                      middleware_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/middleware/error_handler.py.jinja",
-                      middleware_dir / "error_handler.py", {})
-    _render_and_write("project/fullstack/backend/app/schemas/__init__.py.jinja",
-                      schemas_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/utils/__init__.py.jinja",
-                      utils_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/app/utils/logger.py.jinja",
-                      utils_dir / "logger.py", {})
-    _render_and_write("project/fullstack/backend/tests/__init__.py.jinja",
-                      tests_dir / "__init__.py", {})
+    """Scaffold a REST API service using the domain-based structure."""
+    _scaffold_domain_structure(service_path, service_name, auth_type, db_choice, cache_choice, "rest-apis")
 
 
 def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
@@ -474,19 +422,19 @@ def scaffold_project_structure(
         _ensure_dir(frontend_dir)
         _ensure_dir(infra_dir)
 
-        # Backend part (using fullstack-specific templates)
-        _scaffold_fullstack_backend(
-            backend_dir, project_name, auth_type, db_choice, cache_choice
+        # Backend part (same as rest-apis with domain structure)
+        _scaffold_domain_structure(
+            backend_dir, project_name, auth_type, db_choice, cache_choice, "rest-apis"
         )
 
         # Frontend part
         _render_and_write(
-            "project/rest-apis/infra/.gitkeep.jinja", frontend_dir / ".gitkeep", {}
+            "project/fullstack/frontend/.gitkeep.jinja", frontend_dir / ".gitkeep", {}
         )
 
         # Infra part
         _render_and_write(
-            "project/rest-apis/infra/.gitkeep.jinja", infra_dir / ".gitkeep", {}
+            "project/fullstack/infra/.gitkeep.jinja", infra_dir / ".gitkeep", {}
         )
 
     elif architecture == "microservices":

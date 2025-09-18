@@ -7,6 +7,21 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116",
     "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.0.0",
+    "pytest>=7.0.0",
+{% if db_choice != "none" -%}
+    "sqlalchemy>=2.0.0",
+{% if db_choice == "postgresql" -%}
+    "psycopg2-binary>=2.9.0",
+{% elif db_choice == "mysql" -%}
+    "pymysql>=1.0.0",
+{% elif db_choice == "sqlite" -%}
+    # SQLite support is built into Python
+{% endif -%}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+    "redis>=4.0.0",
+{% endif -%}
 ]
 
 [tool.uv]
