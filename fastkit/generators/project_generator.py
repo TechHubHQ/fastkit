@@ -278,7 +278,6 @@ def _scaffold_fullstack_backend(service_path: Path, service_name: str, auth_type
     auth_dir = src_app / "auth"
     cache_dir = src_app / "cache"
     tests_dir = service_path / "tests"
-    infra_dir = service_path / "infra"
 
     for d in [
         service_path,
@@ -293,7 +292,6 @@ def _scaffold_fullstack_backend(service_path: Path, service_name: str, auth_type
         schemas_dir,
         utils_dir,
         tests_dir,
-        infra_dir,
     ]:
         _ensure_dir(d)
 
@@ -350,8 +348,6 @@ def _scaffold_fullstack_backend(service_path: Path, service_name: str, auth_type
                       utils_dir / "logger.py", {})
     _render_and_write("project/fullstack/backend/tests/__init__.py.jinja",
                       tests_dir / "__init__.py", {})
-    _render_and_write("project/fullstack/backend/infra/.gitkeep.jinja",
-                      infra_dir / ".gitkeep", {})
 
 
 def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
@@ -445,15 +441,6 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
                       infra_dir / ".gitkeep", {})
 
 
-
-
-
-
-
-
-
-
-
 def scaffold_project_structure(
     *,
     base_path: Path,
@@ -465,7 +452,6 @@ def scaffold_project_structure(
     architecture_config: dict = None,
 ) -> None:
     """Create a best-practice FastAPI project directory structure.
-
     This function only creates directories and minimal placeholder files.
     No integrations are configured; we merely reflect the user's selections
     in the structure.
@@ -480,10 +466,28 @@ def scaffold_project_structure(
                                    db_choice, cache_choice)
 
     elif architecture == "fullstack":
-        # Handle Fullstack architecture - Backend only
+        # Handle Fullstack architecture
+        backend_dir = app_root / "backend"
+        frontend_dir = app_root / "frontend"
+        infra_dir = app_root / "infra"
+        _ensure_dir(backend_dir)
+        _ensure_dir(frontend_dir)
+        _ensure_dir(infra_dir)
+
         # Backend part (using fullstack-specific templates)
-        _scaffold_fullstack_backend(app_root, project_name,
-                                    auth_type, db_choice, cache_choice)
+        _scaffold_fullstack_backend(
+            backend_dir, project_name, auth_type, db_choice, cache_choice
+        )
+
+        # Frontend part
+        _render_and_write(
+            "project/rest-apis/infra/.gitkeep.jinja", frontend_dir / ".gitkeep", {}
+        )
+
+        # Infra part
+        _render_and_write(
+            "project/rest-apis/infra/.gitkeep.jinja", infra_dir / ".gitkeep", {}
+        )
 
     elif architecture == "microservices":
         # Handle Microservices architecture
