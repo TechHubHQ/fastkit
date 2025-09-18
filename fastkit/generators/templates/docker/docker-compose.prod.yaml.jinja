@@ -1,0 +1,172 @@
+version: '3.8'
+
+# Production environment with optimizations
+services:
+{% if architecture == "fullstack" -%}
+  backend:
+    image: {{ project_name }}-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+{% if db_choice != "none" -%}
+      - DATABASE_URL=${DATABASE_URL}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=${REDIS_URL}
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+  frontend:
+    image: {{ project_name }}-frontend:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% else -%}
+  app:
+    image: {{ project_name }}:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+{% if db_choice != "none" -%}
+      - DATABASE_URL=${DATABASE_URL}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=${REDIS_URL}
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+{% endif -%}
+
+{% if db_choice == "postgresql" -%}
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif db_choice == "mysql" -%}
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+  # Reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+{% if architecture == "fullstack" -%}
+      - backend
+      - frontend
+{% else -%}
+      - app
+{% endif -%}
+    restart: unless-stopped
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+volumes:
+{% if db_choice == "postgresql" -%}
+  postgres_data:
+{% elif db_choice == "mysql" -%}
+  mysql_data:
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis_data:
+{% endif -%}
+
+networks:
+  {{ project_name.replace('-', '_') }}_network:
+    driver: bridge

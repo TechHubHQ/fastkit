@@ -215,6 +215,113 @@ pytest
 pytest --cov=app
 ```
 
+{% if include_docker -%}
+## Docker Setup
+
+This project includes Docker configuration for easy deployment and development.
+
+### Docker Files Structure
+
+```
+infra/
++-- docker/
+    |-- docker-compose.yaml      # Base configuration
+    |-- docker-compose.dev.yaml  # Development environment
+    +-- docker-compose.prod.yaml # Production environment
+```
+
+### Development with Docker
+
+```bash
+# Start development environment
+docker-compose -f infra/docker/docker-compose.dev.yaml up
+
+# Start in background
+docker-compose -f infra/docker/docker-compose.dev.yaml up -d
+
+# View logs
+docker-compose -f infra/docker/docker-compose.dev.yaml logs -f
+
+# Stop services
+docker-compose -f infra/docker/docker-compose.dev.yaml down
+```
+
+### Production Deployment
+
+```bash
+# Build and start production environment
+docker-compose -f infra/docker/docker-compose.prod.yaml up -d
+
+# Scale services (if applicable)
+docker-compose -f infra/docker/docker-compose.prod.yaml up -d --scale app=3
+```
+
+### Docker Commands
+
+```bash
+# Build image
+docker build -t {{ project_name }} .
+
+# Run container
+docker run -p 8000:8000 {{ project_name }}
+
+# Run with environment variables
+docker run -p 8000:8000 -e ENVIRONMENT=production {{ project_name }}
+```
+{% endif -%}
+
+{% if include_cicd -%}
+## CI/CD Pipeline
+
+This project includes GitHub Actions workflows for continuous integration and deployment.
+
+### Workflows
+
+- **CI Pipeline** (`.github/workflows/ci.yaml`):
+  - Runs on push to main/develop branches and pull requests
+  - Tests across multiple Python versions (3.11, 3.12)
+  - Linting with ruff
+  - Type checking with mypy
+  - Security checks with bandit and safety
+  - Code coverage reporting
+{% if include_docker -%}
+  - Docker image building and testing
+{% endif -%}
+
+- **CD Pipeline** (`.github/workflows/cd.yaml`):
+  - Runs on push to main branch and version tags
+  - Automated deployment to staging/production
+{% if include_docker -%}
+  - Docker image building and pushing to registry
+{% endif -%}
+  - Environment-specific deployments
+
+### Setting Up CI/CD
+
+1. **Repository Secrets**: Add the following secrets to your GitHub repository:
+{% if include_docker -%}
+   - `DOCKER_USERNAME`: Your Docker Hub username
+   - `DOCKER_PASSWORD`: Your Docker Hub password or access token
+{% endif -%}
+   - Add deployment-specific secrets (AWS keys, server credentials, etc.)
+
+2. **Environment Variables**: Configure environment-specific variables in GitHub repository settings
+
+3. **Branch Protection**: Set up branch protection rules for main branch requiring CI checks
+
+### Local CI Testing
+
+```bash
+# Run the same checks as CI locally
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy .
+uv run pytest --cov={{ project_name.replace('-', '_') }}
+uv run bandit -r {{ project_name.replace('-', '_') }}/
+uv run safety check
+```
+{% endif -%}
+
 ## Project Structure Benefits
 
 {% if architecture == 'microservices' %}

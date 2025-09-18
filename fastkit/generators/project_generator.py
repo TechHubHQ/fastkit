@@ -27,6 +27,68 @@ def _render_and_write(template_name: str, dest_path: Path, context: dict) -> Non
     dest_path.write_text(content, encoding='utf-8')
 
 
+def _create_cicd_pipelines(base_path: Path, context: dict) -> None:
+    """Create GitHub Actions CI/CD pipeline files."""
+    github_dir = base_path / ".github"
+    workflows_dir = github_dir / "workflows"
+    _ensure_dir(workflows_dir)
+
+    # Create CI pipeline
+    _render_and_write("cicd/ci.yaml.jinja", workflows_dir / "ci.yaml", context)
+
+    # Create CD pipeline
+    _render_and_write("cicd/cd.yaml.jinja", workflows_dir / "cd.yaml", context)
+
+    # Create pull request template
+    _render_and_write("cicd/pull_request_template.md.jinja",
+                      github_dir / "pull_request_template.md", context)
+
+
+def _create_docker_setup(base_path: Path, context: dict, architecture: str) -> None:
+    """Create Docker setup files."""
+    infra_dir = base_path / "infra"
+    docker_dir = infra_dir / "docker"
+    _ensure_dir(docker_dir)
+
+    # Create docker-compose.yaml in infra/docker
+    _render_and_write("docker/docker-compose.yaml.jinja",
+                      docker_dir / "docker-compose.yaml", context)
+
+    # Create development docker-compose
+    _render_and_write("docker/docker-compose.dev.yaml.jinja",
+                      docker_dir / "docker-compose.dev.yaml", context)
+
+    # Create production docker-compose
+    _render_and_write("docker/docker-compose.prod.yaml.jinja",
+                      docker_dir / "docker-compose.prod.yaml", context)
+
+    # Create Dockerfile based on architecture
+    if architecture == "fullstack":
+        # Create Dockerfile for backend
+        backend_dir = base_path / "backend"
+        _render_and_write("docker/Dockerfile.backend.jinja",
+                          backend_dir / "Dockerfile", context)
+
+        # Create Dockerfile for frontend
+        frontend_dir = base_path / "frontend"
+        _render_and_write("docker/Dockerfile.frontend.jinja",
+                          frontend_dir / "Dockerfile", context)
+
+    elif architecture == "microservices":
+        # Create Dockerfile template for services
+        _render_and_write("docker/Dockerfile.service.jinja",
+                          docker_dir / "Dockerfile.service", context)
+
+    else:
+        # Create Dockerfile for single service (rest-apis, onion-architecture)
+        _render_and_write("docker/Dockerfile.jinja",
+                          base_path / "Dockerfile", context)
+
+    # Create .dockerignore
+    _render_and_write("docker/.dockerignore.jinja",
+                      base_path / ".dockerignore", context)
+
+
 def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType, template_prefix: str) -> None:
     """Scaffold the new domain-based structure."""
     context = {
@@ -295,7 +357,8 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
 def _scaffold_rest_api_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
     """Scaffold a REST API service using the domain-based structure."""
-    _scaffold_domain_structure(service_path, service_name, auth_type, db_choice, cache_choice, "rest-apis")
+    _scaffold_domain_structure(
+        service_path, service_name, auth_type, db_choice, cache_choice, "rest-apis")
 
 
 def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
@@ -398,6 +461,8 @@ def scaffold_project_structure(
     db_choice: DbType = "none",
     cache_choice: CacheType = "none",
     architecture_config: dict = None,
+    include_cicd: bool = True,
+    include_docker: bool = True,
 ) -> None:
     """Create a best-practice FastAPI project directory structure.
     This function only creates directories and minimal placeholder files.
@@ -448,8 +513,27 @@ def scaffold_project_structure(
                                      db_choice, cache_choice, architecture_config or {})
 
     # UV/pyproject setup and top-level files
+    context = {
+        "project_name": project_name,
+        "architecture": architecture,
+        "auth_type": auth_type,
+        "db_choice": db_choice,
+        "cache_choice": cache_choice,
+        "include_cicd": include_cicd,
+        "include_docker": include_docker
+    }
+
     _render_and_write("project/pyproject.toml.jinja", app_root /
-                      "pyproject.toml", {"project_name": project_name})
+                      "pyproject.toml", context)
     _render_and_write("project/README.md.jinja", app_root /
-                      "README.md", {"project_name": project_name, "architecture": architecture})
-    _render_and_write("project/.gitignore.jinja", app_root / ".gitignore", {})
+                      "README.md", context)
+    _render_and_write("project/.gitignore.jinja",
+                      app_root / ".gitignore", context)
+
+    # Create CI/CD pipelines if requested
+    if include_cicd:
+        _create_cicd_pipelines(app_root, context)
+
+    # Create Docker setup if requested (always create infra/docker by default)
+    if include_docker:
+        _create_docker_setup(app_root, context, architecture)

@@ -83,6 +83,16 @@ instance/
 # Docker
 *.pid
 docker-compose.override.yml
+.docker/
+
+# CI/CD secrets and environment files
+.secrets/
+*.pem
+*.key
+*.crt
+
+# UV cache
+.uv-cache/
 
 # VS Code settings
 .vscode/

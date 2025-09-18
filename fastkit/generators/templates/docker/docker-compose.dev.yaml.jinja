@@ -1,0 +1,168 @@
+version: '3.8'
+
+# Development environment with hot reload and debugging
+services:
+{% if architecture == "fullstack" -%}
+  backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      target: development
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debug port
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - RELOAD=true
+{% if db_choice != "none" -%}
+      - DATABASE_URL={{ _get_database_url() }}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=redis://redis:6379/0
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    volumes:
+      - ../../backend:/app
+      - /app/.venv  # Exclude virtual environment
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules  # Exclude node_modules
+    command: ["npm", "run", "dev"]
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% else -%}
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debug port
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - RELOAD=true
+{% if db_choice != "none" -%}
+      - DATABASE_URL={{ _get_database_url() }}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=redis://redis:6379/0
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    volumes:
+      - ../..:/app
+      - /app/.venv  # Exclude virtual environment
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+{% endif -%}
+
+{% if db_choice == "postgresql" -%}
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: {{ project_name.replace('-', '_') }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif db_choice == "mysql" -%}
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: {{ project_name.replace('-', '_') }}
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../../scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+  # Development tools
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+volumes:
+{% if db_choice == "postgresql" -%}
+  postgres_data:
+{% elif db_choice == "mysql" -%}
+  mysql_data:
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis_data:
+{% endif -%}
+
+networks:
+  {{ project_name.replace('-', '_') }}_network:
+    driver: bridge
+
+{%- macro _get_database_url() -%}
+{%- if db_choice == "postgresql" -%}
+postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
+{%- elif db_choice == "mysql" -%}
+mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
+{%- elif db_choice == "sqlite" -%}
+sqlite:///./{{ project_name.replace('-', '_') }}.db
+{%- else -%}
+sqlite:///./app.db
+{%- endif -%}
+{%- endmacro -%}

@@ -199,6 +199,13 @@ def create_project(
                                  "redis", "none"], default="redis")
         )
 
+    # Ask about CI/CD and Docker setup
+    include_cicd = typer.confirm(
+        "Do you want to include CI/CD pipelines (GitHub Actions)?", default=True)
+
+    include_docker = typer.confirm(
+        "Do you want to include Docker setup?", default=True)
+
     # Get architecture-specific configuration
     architecture_config = {}
     if architecture == "microservices":
@@ -213,6 +220,9 @@ def create_project(
     console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
     console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
     console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
+    console.print(f"  CI/CD:   [cyan]{'Yes' if include_cicd else 'No'}[/cyan]")
+    console.print(
+        f"  Docker:  [cyan]{'Yes' if include_docker else 'No'}[/cyan]")
 
     if architecture_config:
         console.print(f"  Config:  [cyan]{architecture_config}[/cyan]")
@@ -235,6 +245,8 @@ def create_project(
         db_choice=db_choice,
         cache_choice=cache_choice,
         architecture_config=architecture_config,
+        include_cicd=include_cicd,
+        include_docker=include_docker,
     )
 
     console.print(

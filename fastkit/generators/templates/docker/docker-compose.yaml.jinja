@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+{% if architecture == "fullstack" -%}
+  backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+{% if db_choice != "none" -%}
+      - DATABASE_URL={{ _get_database_url() }}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=redis://redis:6379/0
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    volumes:
+      - ../../backend:/app
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif architecture == "microservices" -%}
+  # Add your microservices here
+  # Example:
+  # api-gateway:
+  #   build: ./services/api-gateway
+  #   ports:
+  #     - "8000:8000"
+  #   networks:
+  #     - {{ project_name.replace('-', '_') }}_network
+
+{% else -%}
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+{% if db_choice != "none" -%}
+      - DATABASE_URL={{ _get_database_url() }}
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - REDIS_URL=redis://redis:6379/0
+{% endif -%}
+    depends_on:
+{% if db_choice == "postgresql" -%}
+      - postgres
+{% elif db_choice == "mysql" -%}
+      - mysql
+{% endif -%}
+{% if cache_choice == "redis" -%}
+      - redis
+{% endif -%}
+    volumes:
+      - ../..:/app
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+{% endif -%}
+
+{% if db_choice == "postgresql" -%}
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: {{ project_name.replace('-', '_') }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif db_choice == "mysql" -%}
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: {{ project_name.replace('-', '_') }}
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: mysql
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% endif -%}
+volumes:
+{% if db_choice == "postgresql" -%}
+  postgres_data:
+{% elif db_choice == "mysql" -%}
+  mysql_data:
+{% endif -%}
+{% if cache_choice == "redis" -%}
+  redis_data:
+{% endif -%}
+
+networks:
+  {{ project_name.replace('-', '_') }}_network:
+    driver: bridge
+
+{%- macro _get_database_url() -%}
+{%- if db_choice == "postgresql" -%}
+postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
+{%- elif db_choice == "mysql" -%}
+mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
+{%- elif db_choice == "sqlite" -%}
+sqlite:///./{{ project_name.replace('-', '_') }}.db
+{%- else -%}
+sqlite:///./app.db
+{%- endif -%}
+{%- endmacro -%}
