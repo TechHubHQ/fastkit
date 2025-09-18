@@ -11,7 +11,13 @@ services:
     environment:
       - ENVIRONMENT=development
 {% if db_choice != "none" -%}
-      - DATABASE_URL={{ _get_database_url() }}
+{% if db_choice == "postgresql" -%}
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
+{% elif db_choice == "mysql" -%}
+      - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
+{% elif db_choice == "sqlite" -%}
+      - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
+{% endif -%}
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - REDIS_URL=redis://redis:6379/0
@@ -61,7 +67,13 @@ services:
     environment:
       - ENVIRONMENT=development
 {% if db_choice != "none" -%}
-      - DATABASE_URL={{ _get_database_url() }}
+{% if db_choice == "postgresql" -%}
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
+{% elif db_choice == "mysql" -%}
+      - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
+{% elif db_choice == "sqlite" -%}
+      - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
+{% endif -%}
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - REDIS_URL=redis://redis:6379/0
@@ -135,15 +147,3 @@ volumes:
 networks:
   {{ project_name.replace('-', '_') }}_network:
     driver: bridge
-
-{%- macro _get_database_url() -%}
-{%- if db_choice == "postgresql" -%}
-postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
-{%- elif db_choice == "mysql" -%}
-mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
-{%- elif db_choice == "sqlite" -%}
-sqlite:///./{{ project_name.replace('-', '_') }}.db
-{%- else -%}
-sqlite:///./app.db
-{%- endif -%}
-{%- endmacro -%}
