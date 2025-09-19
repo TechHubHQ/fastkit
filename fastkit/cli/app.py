@@ -8,6 +8,7 @@ from fastkit.cli.commands.greet import greet
 from fastkit.cli.commands.version import version
 from fastkit.cli.commands.create_project import create_project
 from fastkit.cli.commands.add_domain import add_domain
+from fastkit.cli.commands.add_service import add_service
 
 app = typer.Typer()
 console = Console()
@@ -29,6 +30,19 @@ def main(
 
     A modern CLI toolkit for scaffolding FastAPI projects with production-ready
     templates, integrations, and best practices.
+    
+    QUICK START:
+      fastkit create-project my-app     # Create new project
+      fastkit add-service db postgresql # Add database service
+      fastkit add-service cache redis   # Add caching service
+      fastkit add-service auth jwt      # Add authentication
+      fastkit add-domain users          # Add business domain
+    
+    AVAILABLE SERVICES:
+      Database:  postgresql, mysql, sqlite, mongodb, mssql
+      Cache:     redis, memcached, dynamodb, in-memory
+      Auth:      jwt, oauth
+      Jobs:      celery, rq, apscheduler, dramatiq, arq
     """
     if help:
         # Show professional help
@@ -89,6 +103,8 @@ def main(
 app.command(help="Greet someone with style")(greet)
 app.command(help="Show FastKit version information")(version)
 app.command(name="create-project",
-            help="Create a new FastAPI project via an interactive wizard")(create_project)
+            help="Create a new FastAPI project with architecture, database, cache, and auth options")(create_project)
 app.command(name="add-domain",
-            help="Add a new domain to an existing FastAPI project")(add_domain)
+            help="Add a business domain (users, products, orders) with models, services, and routes")(add_domain)
+app.command(name="add-service",
+            help="Add services: DB(postgresql|mysql|sqlite|mongodb|mssql) CACHE(redis|memcached|dynamodb|in-memory) AUTH(jwt|oauth) JOBS(celery|rq|apscheduler|dramatiq|arq)")(add_service)

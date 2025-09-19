@@ -1,0 +1,15 @@
+"""Job scheduler service module."""
+
+{% if jobs_choice == "celery" -%}
+from .celery_scheduler import scheduler, task
+{% elif jobs_choice == "rq" -%}
+from .rq_scheduler import scheduler, task
+{% elif jobs_choice == "apscheduler" -%}
+from .apscheduler_scheduler import scheduler, task
+{% elif jobs_choice == "dramatiq" -%}
+from .dramatiq_scheduler import scheduler, task
+{% elif jobs_choice == "arq" -%}
+from .arq_scheduler import scheduler, task
+{% endif -%}
+
+__all__ = ["scheduler", "task"]

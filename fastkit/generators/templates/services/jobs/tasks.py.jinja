@@ -1,0 +1,110 @@
+"""Example tasks for {{ project_name }}."""
+
+import logging
+from datetime import datetime
+from app.jobs import task
+
+logger = logging.getLogger(__name__)
+
+
+# Example: Simple task
+@task(name="hello_world")
+def hello_world(name: str = "World"):
+    """Simple hello world task."""
+    logger.info(f"Hello, {name}!")
+    return f"Hello, {name}!"
+
+
+# Example: Scheduled task (runs every 5 minutes)
+@task(
+    name="cleanup_task",
+    schedule={
+        "type": "interval",
+        "seconds": 300  # 5 minutes
+    }
+)
+def cleanup_task():
+    """Cleanup task that runs every 5 minutes."""
+    logger.info("Running cleanup task...")
+    # Add your cleanup logic here
+    return "Cleanup completed"
+
+
+# Example: Cron-based task (runs daily at 2 AM)
+@task(
+    name="daily_report",
+    schedule={
+        "type": "cron",
+        "hour": "2",
+        "minute": "0"
+    }
+)
+def daily_report():
+    """Generate daily report at 2 AM."""
+    logger.info("Generating daily report...")
+    # Add your report generation logic here
+    return "Daily report generated"
+
+
+# Example: Email notification task
+@task(name="send_email")
+def send_email(to: str, subject: str, body: str):
+    """Send email notification."""
+    logger.info(f"Sending email to {to}: {subject}")
+    # Add your email sending logic here
+    # You might want to integrate with your email service
+    return f"Email sent to {to}"
+
+
+# Example: Data processing task
+@task(name="process_data")
+def process_data(data_id: int):
+    """Process data by ID."""
+    logger.info(f"Processing data with ID: {data_id}")
+    # Add your data processing logic here
+    # This might involve database operations, API calls, etc.
+    return f"Data {data_id} processed successfully"
+
+
+# Example: File processing task
+@task(name="process_file")
+def process_file(file_path: str):
+    """Process uploaded file."""
+    logger.info(f"Processing file: {file_path}")
+    # Add your file processing logic here
+    # This might involve image processing, document parsing, etc.
+    return f"File {file_path} processed successfully"
+
+
+# Example: Webhook notification task
+@task(name="send_webhook")
+def send_webhook(url: str, payload: dict):
+    """Send webhook notification."""
+    logger.info(f"Sending webhook to {url}")
+    # Add your webhook sending logic here
+    # You might want to use httpx or requests
+    return f"Webhook sent to {url}"
+
+
+{% if jobs_choice == "arq" -%}
+# ARQ-specific async tasks
+@task(name="async_hello_world")
+async def async_hello_world(name: str = "World"):
+    """Async hello world task for ARQ."""
+    logger.info(f"Async Hello, {name}!")
+    return f"Async Hello, {name}!"
+
+
+@task(
+    name="async_cleanup_task",
+    schedule={
+        "type": "interval",
+        "seconds": 300
+    }
+)
+async def async_cleanup_task():
+    """Async cleanup task for ARQ."""
+    logger.info("Running async cleanup task...")
+    # Add your async cleanup logic here
+    return "Async cleanup completed"
+{% endif -%}

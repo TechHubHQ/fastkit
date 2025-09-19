@@ -14,7 +14,7 @@ console = Console()
 
 def add_domain(
     domain_name: str = typer.Argument(
-        ..., help="Name of the domain to create (e.g., users, products)"),
+        ..., help="Domain name (lowercase, e.g., users, products, orders, customers)"),
     path: Optional[Path] = typer.Option(
         None, "--path", "-p", help="Path to the project root (defaults to current directory)"
     ),
@@ -25,7 +25,29 @@ def add_domain(
         False, "--force", "-f", help="Overwrite existing domain if it exists"
     )
 ):
-    """Add a new domain to an existing FastAPI project."""
+    """Add a new domain to an existing FastAPI project.
+    
+    A domain represents a business area or feature set in your application.
+    Each domain includes models, schemas, services, repositories, and routes.
+    
+    DOMAIN STRUCTURE:
+      models.py       Database models (SQLAlchemy/Motor)
+      schemas.py      Pydantic schemas for API validation
+      services.py     Business logic and domain services
+      repositories.py Data access layer
+      routes.py       API endpoints for the domain
+      dependencies.py Domain-specific dependencies
+      exceptions.py   Domain-specific exceptions
+    
+    EXAMPLES:
+      fastkit add-domain users      # User management domain
+      fastkit add-domain products   # Product catalog domain
+      fastkit add-domain orders     # Order processing domain
+      fastkit add-domain auth       # Authentication domain
+    
+    The domain will be created in app/domains/{domain_name}/ and
+    automatically integrated with your API routing.
+    """
     console.clear()
     print_ascii_msg()
 
@@ -91,6 +113,10 @@ def add_domain(
 
         console.print(
             f"\n[bold bright_green]Domain '{domain_name}' created successfully![/bold bright_green]")
+        console.print(
+            "[dim]✓ Domain files created[/dim]")
+        console.print(
+            "[dim]✓ Dependencies synced to pyproject.toml[/dim]")
         console.print(
             f"\nDomain files created in: [underline]{domains_path}[/underline]")
         console.print("\n[bold]Next steps:[/bold]")

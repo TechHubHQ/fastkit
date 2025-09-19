@@ -1,0 +1,15 @@
+"""Database service module."""
+
+{% if db_choice == "postgresql" -%}
+from .postgresql_client import db_client
+{% elif db_choice == "mysql" -%}
+from .mysql_client import db_client
+{% elif db_choice == "sqlite" -%}
+from .sqlite_client import db_client
+{% elif db_choice == "mongodb" -%}
+from .mongodb_client import db_client
+{% elif db_choice == "mssql" -%}
+from .mssql_client import db_client
+{% endif -%}
+
+__all__ = ["db_client"]

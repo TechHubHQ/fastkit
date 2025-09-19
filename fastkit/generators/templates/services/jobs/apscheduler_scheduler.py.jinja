@@ -1,0 +1,222 @@
+"""APScheduler-based job scheduler."""
+
+import logging
+from datetime import datetime
+from typing import Any, Callable, Dict, Optional
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class APSchedulerJobScheduler:
+    """APScheduler job scheduler."""
+    
+    def __init__(self, use_async: bool = False):
+        """Initialize APScheduler."""
+        self.use_async = use_async
+        
+        # Configure job stores and executors
+        jobstores = {
+            'default': MemoryJobStore()
+        }
+        
+        executors = {
+            'default': ThreadPoolExecutor(20),
+        }
+        
+        job_defaults = {
+            'coalesce': False,
+            'max_instances': 3
+        }
+        
+        # Choose scheduler type
+        if use_async:
+            self.scheduler = AsyncIOScheduler(
+                jobstores=jobstores,
+                executors=executors,
+                job_defaults=job_defaults,
+                timezone='UTC'
+            )
+        else:
+            self.scheduler = BackgroundScheduler(
+                jobstores=jobstores,
+                executors=executors,
+                job_defaults=job_defaults,
+                timezone='UTC'
+            )
+        
+        self._tasks = {}
+        self._started = False
+    
+    def task(self, 
+             name: Optional[str] = None,
+             schedule: Optional[Dict[str, Any]] = None,
+             **kwargs):
+        """Decorator to register a task."""
+        def decorator(func: Callable):
+            task_name = name or f"{func.__module__}.{func.__name__}"
+            
+            # Store task info
+            self._tasks[task_name] = {
+                'func': func,
+                'schedule': schedule,
+                'name': task_name,
+                'kwargs': kwargs
+            }
+            
+            # Schedule if schedule is provided
+            if schedule:
+                self._add_scheduled_job(task_name, func, schedule, **kwargs)
+            
+            return func
+        
+        return decorator
+    
+    def _add_scheduled_job(self, task_name: str, func: Callable, schedule: Dict[str, Any], **kwargs):
+        """Add a scheduled job to APScheduler."""
+        trigger = self._create_trigger(schedule)
+        
+        self.scheduler.add_job(
+            func=func,
+            trigger=trigger,
+            id=task_name,
+            name=task_name,
+            replace_existing=True,
+            **kwargs
+        )
+    
+    def _create_trigger(self, schedule: Dict[str, Any]):
+        """Create APScheduler trigger from schedule config."""
+        schedule_type = schedule.get('type', 'interval')
+        
+        if schedule_type == 'cron':
+            return CronTrigger(
+                minute=schedule.get('minute', '*'),
+                hour=schedule.get('hour', '*'),
+                day=schedule.get('day_of_month', '*'),
+                month=schedule.get('month_of_year', '*'),
+                day_of_week=schedule.get('day_of_week', '*'),
+                timezone='UTC'
+            )
+        elif schedule_type == 'interval':
+            return IntervalTrigger(
+                seconds=schedule.get('seconds', 60),
+                minutes=schedule.get('minutes', 0),
+                hours=schedule.get('hours', 0),
+                days=schedule.get('days', 0),
+                weeks=schedule.get('weeks', 0)
+            )
+        elif schedule_type == 'date':
+            run_date = schedule.get('run_date')
+            if isinstance(run_date, str):
+                run_date = datetime.fromisoformat(run_date)
+            return DateTrigger(run_date=run_date, timezone='UTC')
+        else:
+            raise ValueError(f"Unsupported schedule type: {schedule_type}")
+    
+    def run_task(self, task_name: str, *args, **kwargs):
+        """Run a task immediately."""
+        if task_name in self._tasks:
+            func = self._tasks[task_name]['func']
+            if self.use_async:
+                import asyncio
+                return asyncio.create_task(func(*args, **kwargs))
+            else:
+                return func(*args, **kwargs)
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    def schedule_task(self, task_name: str, when=None, *args, **kwargs):
+        """Schedule a task to run at a specific time."""
+        if task_name in self._tasks:
+            func = self._tasks[task_name]['func']
+            
+            if when is None:
+                when = datetime.utcnow()
+            elif isinstance(when, (int, float)):
+                from datetime import timedelta
+                when = datetime.utcnow() + timedelta(seconds=when)
+            
+            job = self.scheduler.add_job(
+                func=func,
+                trigger=DateTrigger(run_date=when, timezone='UTC'),
+                args=args,
+                kwargs=kwargs,
+                id=f"{task_name}_{when.isoformat()}"
+            )
+            return job.id
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    def get_task_status(self, job_id: str):
+        """Get the status of a task."""
+        job = self.scheduler.get_job(job_id)
+        if job:
+            return {
+                'id': job.id,
+                'name': job.name,
+                'next_run_time': job.next_run_time,
+                'trigger': str(job.trigger),
+                'func': f"{job.func.__module__}.{job.func.__name__}"
+            }
+        return None
+    
+    def cancel_task(self, job_id: str):
+        """Cancel a scheduled task."""
+        self.scheduler.remove_job(job_id)
+        return True
+    
+    def pause_task(self, job_id: str):
+        """Pause a scheduled task."""
+        self.scheduler.pause_job(job_id)
+        return True
+    
+    def resume_task(self, job_id: str):
+        """Resume a paused task."""
+        self.scheduler.resume_job(job_id)
+        return True
+    
+    def list_tasks(self):
+        """List all registered tasks."""
+        return list(self._tasks.keys())
+    
+    def list_jobs(self):
+        """List all scheduled jobs."""
+        jobs = self.scheduler.get_jobs()
+        return [
+            {
+                'id': job.id,
+                'name': job.name,
+                'next_run_time': job.next_run_time,
+                'trigger': str(job.trigger)
+            }
+            for job in jobs
+        ]
+    
+    def start(self):
+        """Start the scheduler."""
+        if not self._started:
+            logger.info("Starting APScheduler...")
+            self.scheduler.start()
+            self._started = True
+    
+    def shutdown(self, wait: bool = True):
+        """Shutdown the scheduler."""
+        if self._started:
+            logger.info("Shutting down APScheduler...")
+            self.scheduler.shutdown(wait=wait)
+            self._started = False
+
+
+# Global scheduler instance
+scheduler = APSchedulerJobScheduler()
+
+# Task decorator shortcut
+task = scheduler.task

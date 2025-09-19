@@ -1,0 +1,77 @@
+"""Memcached cache client."""
+
+import json
+import logging
+from typing import Any, Optional
+from pymemcache.client.base import Client
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class MemcachedClient:
+    """Memcached cache client."""
+
+    def __init__(self):
+        """Initialize Memcached client."""
+        servers = settings.MEMCACHED_SERVERS.split(',')
+        if len(servers) == 1:
+            # Single server
+            host, port = servers[0].split(':')
+            self.client = Client((host, int(port)))
+        else:
+            # Multiple servers - use first one for simplicity
+            # In production, consider using pymemcache.client.hash.HashClient
+            host, port = servers[0].split(':')
+            self.client = Client((host, int(port)))
+
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value from cache."""
+        try:
+            value = self.client.get(key)
+            if value is None:
+                return None
+            return json.loads(value.decode('utf-8'))
+        except Exception as e:
+            logger.error(f"Error getting key {key} from Memcached: {e}")
+            return None
+
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Set value in cache."""
+        try:
+            ttl = ttl or settings.CACHE_TTL
+            serialized_value = json.dumps(value, default=str)
+            return self.client.set(key, serialized_value, expire=ttl)
+        except Exception as e:
+            logger.error(f"Error setting key {key} in Memcached: {e}")
+            return False
+
+    async def delete(self, key: str) -> bool:
+        """Delete key from cache."""
+        try:
+            return self.client.delete(key)
+        except Exception as e:
+            logger.error(f"Error deleting key {key} from Memcached: {e}")
+            return False
+
+    async def exists(self, key: str) -> bool:
+        """Check if key exists in cache."""
+        try:
+            value = self.client.get(key)
+            return value is not None
+        except Exception as e:
+            logger.error(f"Error checking key {key} in Memcached: {e}")
+            return False
+
+    async def clear(self) -> bool:
+        """Clear all cache."""
+        try:
+            self.client.flush_all()
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing Memcached cache: {e}")
+            return False
+
+
+# Global cache client instance
+cache_client = MemcachedClient()

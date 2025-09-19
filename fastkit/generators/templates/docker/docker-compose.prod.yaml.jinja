@@ -10,11 +10,13 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
-{% if db_choice != "none" -%}
+{%- if db_choice != "none" %}
       - DATABASE_URL=${DATABASE_URL}
-{% endif -%}
+{%- endif %}
 {% if cache_choice == "redis" -%}
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=redis://redis:6379/0
+{% elif cache_choice == "memcached" -%}
+      - MEMCACHED_SERVERS=memcached:11211
 {% endif -%}
     depends_on:
 {% if db_choice == "postgresql" -%}
@@ -24,6 +26,8 @@ services:
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
+{% elif cache_choice == "memcached" -%}
+      - memcached
 {% endif -%}
     restart: unless-stopped
     healthcheck:
@@ -58,12 +62,12 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
-{% if db_choice != "none" -%}
+{%- if db_choice != "none" %}
       - DATABASE_URL=${DATABASE_URL}
-{% endif -%}
-{% if cache_choice == "redis" -%}
+{%- endif %}
+{%- if cache_choice == "redis" %}
       - REDIS_URL=${REDIS_URL}
-{% endif -%}
+{%- endif %}
     depends_on:
 {% if db_choice == "postgresql" -%}
       - postgres
@@ -133,6 +137,14 @@ services:
       timeout: 10s
       retries: 3
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif cache_choice == "memcached" -%}
+  memcached:
+    image: memcached:1.6-alpine
+    restart: unless-stopped
+    command: memcached -m 128
     networks:
       - {{ project_name.replace('-', '_') }}_network
 

@@ -1,0 +1,53 @@
+"""SQLite database client."""
+
+from sqlalchemy.orm import Session
+from .base import Base, engine
+from .session import SessionLocal, db_manager
+
+
+class SQLiteClient:
+    """SQLite database client."""
+
+    def __init__(self):
+        self.engine = engine
+        self.SessionLocal = SessionLocal
+        self.Base = Base
+        self.manager = db_manager
+
+    def get_session(self) -> Session:
+        """Get a database session."""
+        return self.SessionLocal()
+
+    def create_tables(self):
+        """Create all database tables."""
+        self.Base.metadata.create_all(bind=self.engine)
+
+    def drop_tables(self):
+        """Drop all database tables."""
+        self.Base.metadata.drop_all(bind=self.engine)
+
+    def get_connection(self):
+        """Get a raw database connection."""
+        return self.engine.connect()
+
+    def execute_raw_sql(self, sql: str, params: dict = None):
+        """Execute raw SQL query."""
+        with self.engine.connect() as conn:
+            return conn.execute(sql, params or {})
+
+    def check_connection(self) -> bool:
+        """Check if database connection is working."""
+        try:
+            with self.engine.connect() as conn:
+                conn.execute("SELECT 1")
+            return True
+        except Exception:
+            return False
+
+    def get_database_path(self) -> str:
+        """Get the SQLite database file path."""
+        return str(self.engine.url).replace("sqlite:///", "")
+
+
+# Global database client instance
+db_client = SQLiteClient()

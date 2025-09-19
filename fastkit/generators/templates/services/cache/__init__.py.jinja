@@ -1,0 +1,13 @@
+"""Cache module."""
+
+{% if cache_choice == "redis" -%}
+from .redis_client import cache_client
+{% elif cache_choice == "memcached" -%}
+from .memcached_client import cache_client
+{% elif cache_choice == "dynamodb" -%}
+from .dynamodb_client import cache_client
+{% elif cache_choice == "in-memory" -%}
+from .memory_client import cache_client
+{% endif -%}
+
+__all__ = ["cache_client"]

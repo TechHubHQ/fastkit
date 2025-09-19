@@ -21,6 +21,19 @@ dependencies = [
 {% endif -%}
 {% if cache_choice == "redis" -%}
     "redis>=4.0.0",
+{% elif cache_choice == "memcached" -%}
+    "pymemcache>=4.0.0",
+{% elif cache_choice == "dynamodb" -%}
+    "boto3>=1.26.0",
+{% elif cache_choice == "in-memory" -%}
+    "cachetools>=5.0.0",
+{% endif -%}
+{% if auth_type == "jwt" -%}
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+{% elif auth_type == "oauth" -%}
+    "authlib>=1.2.0",
+    "httpx>=0.24.0",
 {% endif -%}
 ]
 

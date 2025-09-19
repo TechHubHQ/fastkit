@@ -69,9 +69,13 @@ def create_quick_start_panel():
     quick_start_content.append(
         "# Create a new FastAPI project\n", style="dim white")
     quick_start_content.append(
+        "  fastkit add-domain        ", style="bold bright_blue")
+    quick_start_content.append(
+        "# Add domain to existing project\n", style="dim white")
+    quick_start_content.append(
         "  fastkit add-service       ", style="bold bright_blue")
     quick_start_content.append(
-        "# Add service to existing project\n", style="dim white")
+        "# Add service (db/cache/auth) to project\n", style="dim white")
     quick_start_content.append(
         "  fastkit --help            ", style="bold bright_blue")
     quick_start_content.append(

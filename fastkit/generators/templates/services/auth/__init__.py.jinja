@@ -1,0 +1,9 @@
+"""Authentication service module."""
+
+{% if auth_type == "jwt" -%}
+from .jwt_provider import auth_service
+{% elif auth_type == "oauth" -%}
+from .oauth_provider import auth_service
+{% endif -%}
+
+__all__ = ["auth_service"]

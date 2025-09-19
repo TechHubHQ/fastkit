@@ -1,0 +1,73 @@
+"""Database session management."""
+
+from app.core.config import settings
+from motor.motor_asyncio import AsyncIOMotorClient
+from .base import SessionLocal, engine, Base
+from sqlalchemy.orm import Session
+{ % if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] - %}
+
+
+def create_tables():
+    """Create all database tables."""
+    Base.metadata.create_all(bind=engine)
+
+
+def get_session() -> Session:
+    """Get a new database session."""
+    return SessionLocal()
+
+
+class DatabaseManager:
+    """Database manager for handling connections and sessions."""
+
+    def __init__(self):
+        self.engine = engine
+        self.SessionLocal = SessionLocal
+
+    def create_tables(self):
+        """Create all tables."""
+        Base.metadata.create_all(bind=self.engine)
+
+    def drop_tables(self):
+        """Drop all tables."""
+        Base.metadata.drop_all(bind=self.engine)
+
+    def get_session(self) -> Session:
+        """Get a new session."""
+        return self.SessionLocal()
+
+
+# Global database manager instance
+db_manager = DatabaseManager()
+
+{ % elif db_choice == "mongodb" - %}
+
+
+class MongoDBManager:
+    """MongoDB manager for handling connections."""
+
+    def __init__(self):
+        self.client = None
+        self.database = None
+
+    async def connect(self):
+        """Connect to MongoDB."""
+        self.client = AsyncIOMotorClient(settings.DATABASE_URL)
+        # Extract database name from URL or use default
+        db_name = settings.DATABASE_URL.split(
+            '/')[-1] or "{{ project_name.replace('-', '_') }}"
+        self.database = self.client[db_name]
+
+    async def disconnect(self):
+        """Disconnect from MongoDB."""
+        if self.client:
+            self.client.close()
+
+    def get_collection(self, collection_name: str):
+        """Get a collection."""
+        return self.database[collection_name]
+
+
+# Global MongoDB manager instance
+db_manager = MongoDBManager()
+{ % endif - %}

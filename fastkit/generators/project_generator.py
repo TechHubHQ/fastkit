@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Literal
 from jinja2 import Environment, FileSystemLoader
+from .dependency_manager import get_dependency_manager
 
 
 AuthType = Literal["none", "jwt", "oauth"]
 ArchitectureType = Literal["fullstack",
                            "microservices", "rest-apis", "onion-architecture"]
 DbType = Literal["none", "postgresql", "sqlite", "mysql", "mongodb", "mssql"]
-CacheType = Literal["none", "redis"]
+CacheType = Literal["none", "redis", "memcached", "dynamodb", "in-memory"]
 LanguageType = Literal["typescript", "javascript"]
 
 
@@ -173,11 +174,39 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     _render_and_write(f"project/{template_prefix}/app/db/session.py.jinja",
                       db_dir / "session.py", context)
 
+    # Auth directory (if needed)
+    if auth_type != "none":
+        auth_dir = app_dir / "auth"
+        _ensure_dir(auth_dir)
+        _render_and_write("services/auth/__init__.py.jinja",
+                          auth_dir / "__init__.py", context)
+        if auth_type == "jwt":
+            _render_and_write("services/auth/jwt_provider.py.jinja",
+                              auth_dir / "jwt_provider.py", context)
+        elif auth_type == "oauth":
+            _render_and_write("services/auth/oauth_provider.py.jinja",
+                              auth_dir / "oauth_provider.py", context)
+
     # Cache directory (if needed)
     if cache_choice != "none":
         cache_dir = app_dir / "cache"
         _ensure_dir(cache_dir)
-        # We'll add cache templates later if needed
+        _render_and_write("services/cache/__init__.py.jinja",
+                          cache_dir / "__init__.py", context)
+
+        # Create specific cache client based on choice
+        if cache_choice == "redis":
+            _render_and_write("services/cache/redis_client.py.jinja",
+                              cache_dir / "redis_client.py", context)
+        elif cache_choice == "memcached":
+            _render_and_write("services/cache/memcached_client.py.jinja",
+                              cache_dir / "memcached_client.py", context)
+        elif cache_choice == "dynamodb":
+            _render_and_write("services/cache/dynamodb_client.py.jinja",
+                              cache_dir / "dynamodb_client.py", context)
+        elif cache_choice == "in-memory":
+            _render_and_write("services/cache/memory_client.py.jinja",
+                              cache_dir / "memory_client.py", context)
 
     # Tests directory
     tests_dir = base_path / "tests"
@@ -205,11 +234,10 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     _render_and_write(f"project/{template_prefix}/tests/unit/test_core.py.jinja",
                       unit_tests_dir / "test_core.py", context)
 
-    # Infra directory
+    # Infra directory - only create .gitkeep if no other content will be added
     infra_dir = base_path / "infra"
     _ensure_dir(infra_dir)
-    _render_and_write(f"project/{template_prefix}/infra/.gitkeep.jinja",
-                      infra_dir / ".gitkeep", context)
+    # Note: .gitkeep will be conditionally created later if infra remains empty
 
 
 def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType, config: dict) -> None:
@@ -228,7 +256,7 @@ def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthT
 
         for d in [shared_models, shared_utils, shared_auth]:
             _ensure_dir(d)
-            _render_and_write("service/app/__init__.py.jinja",
+            _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
 
     # Create API Gateway if requested
@@ -283,7 +311,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
     for d in [domain_entities, domain_value_objects, domain_repositories, domain_services]:
         _ensure_dir(d)
-        _render_and_write("service/app/__init__.py.jinja",
+        _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
     # Create entity files for each configured entity
@@ -303,12 +331,12 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
         app_queries = application_dir / "queries"
         for d in [app_use_cases, app_dtos, app_interfaces, app_commands, app_queries]:
             _ensure_dir(d)
-            _render_and_write("service/app/__init__.py.jinja",
+            _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
     else:
         for d in [app_use_cases, app_dtos, app_interfaces]:
             _ensure_dir(d)
-            _render_and_write("service/app/__init__.py.jinja",
+            _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
 
     # Infrastructure layer
@@ -318,7 +346,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
     for d in [infra_database, infra_external, infra_repositories]:
         _ensure_dir(d)
-        _render_and_write("service/app/__init__.py.jinja",
+        _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
     # Presentation layer
@@ -328,7 +356,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
     for d in [pres_api, pres_controllers, pres_schemas]:
         _ensure_dir(d)
-        _render_and_write("service/app/__init__.py.jinja",
+        _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
     # Create API routes file
@@ -351,7 +379,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
 
     for d in [tests_unit, tests_integration]:
         _ensure_dir(d)
-        _render_and_write("service/app/__init__.py.jinja",
+        _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
 
@@ -362,6 +390,13 @@ def _scaffold_rest_api_service(service_path: Path, service_name: str, auth_type:
 
 
 def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
+    # Create context for template rendering
+    context = {
+        "project_name": service_name,
+        "auth_type": auth_type,
+        "db_choice": db_choice,
+        "cache_choice": cache_choice
+    }
     src_app = service_path / "app"
     api_dir = src_app / "api"
     v1_dir = api_dir / "v1"
@@ -397,59 +432,113 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
 
     if auth_type != "none":
         _ensure_dir(auth_dir)
-        _render_and_write("service/app/auth/__init__.py.jinja",
-                          auth_dir / "__init__.py", {})
-        _render_and_write("service/app/auth/routes.py.jinja",
-                          auth_dir / "routes.py", {})
+        _render_and_write("services/auth/__init__.py.jinja",
+                          auth_dir / "__init__.py", context)
+        if auth_type == "jwt":
+            _render_and_write("services/auth/jwt_provider.py.jinja",
+                              auth_dir / "jwt_provider.py", context)
+        elif auth_type == "oauth":
+            _render_and_write("services/auth/oauth_provider.py.jinja",
+                              auth_dir / "oauth_provider.py", context)
 
     if db_choice != "none":
         _ensure_dir(db_dir)
-        _render_and_write("service/app/db/__init__.py.jinja",
-                          db_dir / "__init__.py", {})
-        _render_and_write("service/app/db/session.py.jinja",
-                          db_dir / "session.py", {})
+        _render_and_write("services/db/__init__.py.jinja",
+                          db_dir / "__init__.py", context)
+        _render_and_write("services/db/base.py.jinja",
+                          db_dir / "base.py", context)
+        _render_and_write("services/db/session.py.jinja",
+                          db_dir / "session.py", context)
+
+        # Create specific database client based on choice
+        if db_choice == "postgresql":
+            _render_and_write("services/db/postgresql_client.py.jinja",
+                              db_dir / "postgresql_client.py", context)
+        elif db_choice == "mysql":
+            _render_and_write("services/db/mysql_client.py.jinja",
+                              db_dir / "mysql_client.py", context)
+        elif db_choice == "sqlite":
+            _render_and_write("services/db/sqlite_client.py.jinja",
+                              db_dir / "sqlite_client.py", context)
+        elif db_choice == "mongodb":
+            _render_and_write("services/db/mongodb_client.py.jinja",
+                              db_dir / "mongodb_client.py", context)
+        elif db_choice == "mssql":
+            _render_and_write("services/db/mssql_client.py.jinja",
+                              db_dir / "mssql_client.py", context)
 
     if cache_choice != "none":
         _ensure_dir(cache_dir)
-        _render_and_write("service/app/cache/__init__.py.jinja",
-                          cache_dir / "__init__.py", {})
-        _render_and_write("service/app/cache/client.py.jinja",
-                          cache_dir / "client.py", {})
+        _render_and_write("services/cache/__init__.py.jinja",
+                          cache_dir / "__init__.py", context)
 
-    _render_and_write("service/app/__init__.py.jinja",
-                      src_app / "__init__.py", {})
-    _render_and_write("service/app/main.py.jinja", src_app /
+        # Create specific cache client based on choice
+        if cache_choice == "redis":
+            _render_and_write("services/cache/redis_client.py.jinja",
+                              cache_dir / "redis_client.py", context)
+        elif cache_choice == "memcached":
+            _render_and_write("services/cache/memcached_client.py.jinja",
+                              cache_dir / "memcached_client.py", context)
+        elif cache_choice == "dynamodb":
+            _render_and_write("services/cache/dynamodb_client.py.jinja",
+                              cache_dir / "dynamodb_client.py", context)
+        elif cache_choice == "in-memory":
+            _render_and_write("services/cache/memory_client.py.jinja",
+                              cache_dir / "memory_client.py", context)
+
+    _render_and_write("services/app/__init__.py.jinja",
+                      src_app / "__init__.py", {"title": service_name})
+    _render_and_write("services/app/main.py.jinja", src_app /
                       "main.py", {"title": service_name})
-    _render_and_write("service/app/core/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       core_dir / "__init__.py", {})
-    _render_and_write("service/app/core/config.py.jinja",
-                      core_dir / "config.py", {})
-    _render_and_write("service/app/api/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       api_dir / "__init__.py", {})
-    _render_and_write("service/app/api/v1/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       v1_dir / "__init__.py", {})
-    _render_and_write("service/app/api/v1/routes.py.jinja",
-                      v1_dir / "routes.py", {})
-    _render_and_write("service/app/models/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       models_dir / "__init__.py", {})
-    _render_and_write("service/app/services/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       services_dir / "__init__.py", {})
-    _render_and_write("service/app/repositories/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       repositories_dir / "__init__.py", {})
-    _render_and_write("service/app/middleware/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       middleware_dir / "__init__.py", {})
-    _render_and_write("service/app/middleware/error_handler.py.jinja",
-                      middleware_dir / "error_handler.py", {})
-    _render_and_write("service/app/schemas/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       schemas_dir / "__init__.py", {})
-    _render_and_write("service/app/utils/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       utils_dir / "__init__.py", {})
-    _render_and_write("service/app/utils/logger.py.jinja",
-                      utils_dir / "logger.py", {})
-    _render_and_write("service/tests/__init__.py.jinja",
+    _render_and_write("services/app/__init__.py.jinja",
                       tests_dir / "__init__.py", {})
-    _render_and_write("service/infra/.gitkeep.jinja",
-                      infra_dir / ".gitkeep", {})
+    # Only create .gitkeep if infra directory would be empty
+    # (This will be handled by the main scaffold function)
+
+
+def _sync_project_dependencies(project_path: Path, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
+    """Sync all project dependencies to pyproject.toml."""
+    dep_manager = get_dependency_manager(project_path)
+
+    services_to_sync = {}
+
+    # Add auth dependencies
+    if auth_type != "none":
+        services_to_sync["auth"] = auth_type
+
+    # Add database dependencies
+    if db_choice != "none":
+        services_to_sync["db"] = db_choice
+
+    # Add cache dependencies
+    if cache_choice != "none":
+        services_to_sync["cache"] = cache_choice
+
+    # Add base API dependencies
+    services_to_sync["api"] = "rest"
+    services_to_sync["validation"] = "pydantic"
+    services_to_sync["testing"] = "pytest"
+
+    # Sync all dependencies
+    dep_manager.sync_multiple_services(services_to_sync)
 
 
 def scaffold_project_structure(
@@ -497,10 +586,7 @@ def scaffold_project_structure(
             "project/fullstack/frontend/.gitkeep.jinja", frontend_dir / ".gitkeep", {}
         )
 
-        # Infra part
-        _render_and_write(
-            "project/fullstack/infra/.gitkeep.jinja", infra_dir / ".gitkeep", {}
-        )
+        # Infra part - .gitkeep will be conditionally created later if needed
 
     elif architecture == "microservices":
         # Handle Microservices architecture
@@ -537,3 +623,18 @@ def scaffold_project_structure(
     # Create Docker setup if requested (always create infra/docker by default)
     if include_docker:
         _create_docker_setup(app_root, context, architecture)
+    else:
+        # Only create .gitkeep in infra if no Docker setup (i.e., infra would be empty)
+        if architecture == "fullstack":
+            infra_dir = app_root / "infra"
+            if infra_dir.exists() and not any(infra_dir.iterdir()):
+                _render_and_write("project/fullstack/infra/.gitkeep.jinja",
+                                  infra_dir / ".gitkeep", {})
+        else:
+            infra_dir = app_root / "infra"
+            if infra_dir.exists() and not any(infra_dir.iterdir()):
+                _render_and_write("project/rest-apis/infra/.gitkeep.jinja",
+                                  infra_dir / ".gitkeep", context)
+
+    # Sync all dependencies to pyproject.toml
+    _sync_project_dependencies(app_root, auth_type, db_choice, cache_choice)

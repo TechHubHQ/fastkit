@@ -1,0 +1,94 @@
+"""OAuth Authentication provider."""
+
+import logging
+from typing import Optional, Dict, Any
+from authlib.integrations.starlette_client import OAuth
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class OAuthAuthProvider:
+    """OAuth Authentication provider."""
+
+    def __init__(self):
+        """Initialize OAuth auth provider."""
+        self.oauth = OAuth()
+        self._setup_providers()
+
+    def _setup_providers(self):
+        """Setup OAuth providers."""
+        # Google OAuth
+        if hasattr(settings, 'GOOGLE_CLIENT_ID') and hasattr(settings, 'GOOGLE_CLIENT_SECRET'):
+            self.oauth.register(
+                name='google',
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                server_metadata_url='https://accounts.google.com/.well-known/openid_configuration',
+                client_kwargs={
+                    'scope': 'openid email profile'
+                }
+            )
+
+        # GitHub OAuth
+        if hasattr(settings, 'GITHUB_CLIENT_ID') and hasattr(settings, 'GITHUB_CLIENT_SECRET'):
+            self.oauth.register(
+                name='github',
+                client_id=settings.GITHUB_CLIENT_ID,
+                client_secret=settings.GITHUB_CLIENT_SECRET,
+                access_token_url='https://github.com/login/oauth/access_token',
+                authorize_url='https://github.com/login/oauth/authorize',
+                api_base_url='https://api.github.com/',
+                client_kwargs={'scope': 'user:email'},
+            )
+
+    async def get_authorization_url(self, provider: str, redirect_uri: str) -> Optional[str]:
+        """Get authorization URL for OAuth provider."""
+        try:
+            client = self.oauth.create_client(provider)
+            if not client:
+                logger.error(f"OAuth provider '{provider}' not configured")
+                return None
+
+            # This would typically be implemented with proper request context
+            # For now, return the authorize URL pattern
+            return client.authorize_redirect_uri
+        except Exception as e:
+            logger.error(
+                f"Error getting authorization URL for {provider}: {e}")
+            return None
+
+    async def exchange_code_for_token(self, provider: str, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
+        """Exchange authorization code for access token."""
+        try:
+            client = self.oauth.create_client(provider)
+            if not client:
+                logger.error(f"OAuth provider '{provider}' not configured")
+                return None
+
+            # Exchange code for token
+            token = await client.authorize_access_token(code=code, redirect_uri=redirect_uri)
+            return token
+        except Exception as e:
+            logger.error(
+                f"Error exchanging code for token with {provider}: {e}")
+            return None
+
+    async def get_user_info(self, provider: str, token: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Get user information from OAuth provider."""
+        try:
+            client = self.oauth.create_client(provider)
+            if not client:
+                logger.error(f"OAuth provider '{provider}' not configured")
+                return None
+
+            # Get user info
+            user_info = await client.get_user_info(token)
+            return user_info
+        except Exception as e:
+            logger.error(f"Error getting user info from {provider}: {e}")
+            return None
+
+
+# Global OAuth auth provider instance
+auth_service = OAuthAuthProvider()

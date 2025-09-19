@@ -47,6 +47,11 @@ def _normalize_db_choice(db_choice: str) -> str:
 def _normalize_cache_choice(cache_choice: str) -> str:
     mapping = {
         "redis": "redis",
+        "memcached": "memcached",
+        "dynamodb": "dynamodb",
+        "in-memory": "in-memory",
+        "memory": "in-memory",
+        "local": "in-memory",
         "none": "none",
     }
     return mapping.get(cache_choice.lower(), cache_choice.lower())
@@ -196,7 +201,7 @@ def create_project(
     if needs_integrations and typer.confirm("Add a caching system?", default=False):
         cache_choice = _normalize_cache_choice(
             _prompt_with_choices("Choose a cache provider", [
-                                 "redis", "none"], default="redis")
+                                 "redis", "memcached", "dynamodb", "in-memory", "none"], default="redis")
         )
 
     # Ask about CI/CD and Docker setup

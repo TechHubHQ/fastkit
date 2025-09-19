@@ -1,0 +1,223 @@
+"""ARQ-based job scheduler."""
+
+import logging
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, Optional, List
+import asyncio
+from arq import create_pool, ArqRedis
+from arq.connections import RedisSettings
+from arq.worker import Worker
+from arq.cron import cron
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class ARQScheduler:
+    """ARQ job scheduler."""
+    
+    def __init__(self):
+        """Initialize ARQ scheduler."""
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/0')
+        
+        # Parse Redis URL
+        if redis_url.startswith('redis://'):
+            # Simple parsing for redis://host:port/db
+            url_parts = redis_url.replace('redis://', '').split('/')
+            host_port = url_parts[0].split(':')
+            host = host_port[0] if host_port else 'localhost'
+            port = int(host_port[1]) if len(host_port) > 1 else 6379
+            database = int(url_parts[1]) if len(url_parts) > 1 else 0
+        else:
+            host, port, database = 'localhost', 6379, 0
+        
+        self.redis_settings = RedisSettings(
+            host=host,
+            port=port,
+            database=database
+        )
+        
+        self._tasks = {}
+        self._cron_jobs = []
+        self._pool: Optional[ArqRedis] = None
+    
+    async def _get_pool(self) -> ArqRedis:
+        """Get Redis pool."""
+        if self._pool is None:
+            self._pool = await create_pool(self.redis_settings)
+        return self._pool
+    
+    def task(self, 
+             name: Optional[str] = None,
+             schedule: Optional[Dict[str, Any]] = None,
+             **kwargs):
+        """Decorator to register a task."""
+        def decorator(func: Callable):
+            task_name = name or f"{func.__module__}.{func.__name__}"
+            
+            # Store task info
+            self._tasks[task_name] = {
+                'func': func,
+                'schedule': schedule,
+                'name': task_name,
+                'kwargs': kwargs
+            }
+            
+            # Handle scheduling
+            if schedule:
+                self._setup_scheduled_task(task_name, func, schedule)
+            
+            return func
+        
+        return decorator
+    
+    def _setup_scheduled_task(self, task_name: str, func: Callable, schedule: Dict[str, Any]):
+        """Setup scheduled task using ARQ cron."""
+        schedule_type = schedule.get('type', 'interval')
+        
+        if schedule_type == 'cron':
+            cron_job = cron(
+                func,
+                minute=schedule.get('minute'),
+                hour=schedule.get('hour'),
+                day=schedule.get('day_of_month'),
+                month=schedule.get('month_of_year'),
+                weekday=schedule.get('day_of_week'),
+                name=task_name
+            )
+            self._cron_jobs.append(cron_job)
+            
+        elif schedule_type == 'interval':
+            # ARQ doesn't have built-in interval scheduling
+            # We'll create a cron job that runs frequently and checks if it should execute
+            seconds = schedule.get('seconds', 60)
+            
+            async def interval_wrapper():
+                # This is a simplified approach - in production you'd want more sophisticated interval handling
+                await func()
+            
+            # For simplicity, convert interval to cron (limited precision)
+            if seconds >= 60:
+                minutes = seconds // 60
+                cron_job = cron(
+                    interval_wrapper,
+                    minute=f"*/{minutes}",
+                    name=f"{task_name}_interval"
+                )
+            else:
+                # For sub-minute intervals, run every minute (limitation)
+                cron_job = cron(
+                    interval_wrapper,
+                    minute="*",
+                    name=f"{task_name}_interval"
+                )
+            
+            self._cron_jobs.append(cron_job)
+    
+    async def run_task(self, task_name: str, *args, **kwargs):
+        """Run a task immediately."""
+        if task_name in self._tasks:
+            pool = await self._get_pool()
+            func = self._tasks[task_name]['func']
+            
+            job = await pool.enqueue_job(
+                func.__name__,
+                *args,
+                **kwargs
+            )
+            return job.job_id
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    async def schedule_task(self, task_name: str, when=None, *args, **kwargs):
+        """Schedule a task to run at a specific time."""
+        if task_name in self._tasks:
+            pool = await self._get_pool()
+            func = self._tasks[task_name]['func']
+            
+            if when is None:
+                defer_by = timedelta(0)
+            elif isinstance(when, datetime):
+                defer_by = when - datetime.utcnow()
+            elif isinstance(when, (int, float)):
+                defer_by = timedelta(seconds=when)
+            else:
+                defer_by = when
+            
+            job = await pool.enqueue_job(
+                func.__name__,
+                *args,
+                _defer_by=defer_by,
+                **kwargs
+            )
+            return job.job_id
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    async def get_task_status(self, job_id: str):
+        """Get the status of a task."""
+        pool = await self._get_pool()
+        job_result = await pool.job_result(job_id)
+        
+        return {
+            'id': job_id,
+            'status': 'completed' if job_result else 'pending',
+            'result': job_result
+        }
+    
+    def list_tasks(self):
+        """List all registered tasks."""
+        return list(self._tasks.keys())
+    
+    def list_cron_jobs(self):
+        """List all cron jobs."""
+        return [
+            {
+                'name': job.name,
+                'func': job.coroutine.__name__,
+                'next_run': str(job.next_run())
+            }
+            for job in self._cron_jobs
+        ]
+    
+    def get_worker_functions(self):
+        """Get functions for ARQ worker."""
+        functions = []
+        for task_info in self._tasks.values():
+            functions.append(task_info['func'])
+        return functions
+    
+    async def start_worker(self, **kwargs):
+        """Start ARQ worker."""
+        logger.info("Starting ARQ worker...")
+        
+        # Create worker with all registered functions
+        worker = Worker(
+            functions=self.get_worker_functions(),
+            cron_jobs=self._cron_jobs,
+            redis_settings=self.redis_settings,
+            **kwargs
+        )
+        
+        await worker.main()
+    
+    async def close(self):
+        """Close Redis connection."""
+        if self._pool:
+            await self._pool.close()
+
+
+# Global scheduler instance
+scheduler = ARQScheduler()
+
+# Task decorator shortcut
+task = scheduler.task
+
+# Async helper functions
+async def run_task(task_name: str, *args, **kwargs):
+    """Async wrapper for running tasks."""
+    return await scheduler.run_task(task_name, *args, **kwargs)
+
+async def schedule_task(task_name: str, when=None, *args, **kwargs):
+    """Async wrapper for scheduling tasks."""
+    return await scheduler.schedule_task(task_name, when, *args, **kwargs)

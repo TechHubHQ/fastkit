@@ -10,17 +10,19 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=development
-{% if db_choice != "none" -%}
-{% if db_choice == "postgresql" -%}
+{%- if db_choice != "none" %}
+{%- if db_choice == "postgresql" %}
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
-{% elif db_choice == "mysql" -%}
+{%- elif db_choice == "mysql" %}
       - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
-{% elif db_choice == "sqlite" -%}
+{%- elif db_choice == "sqlite" %}
       - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
-{% endif -%}
-{% endif -%}
+{%- endif %}
+{%- endif %}
 {% if cache_choice == "redis" -%}
       - REDIS_URL=redis://redis:6379/0
+{% elif cache_choice == "memcached" -%}
+      - MEMCACHED_SERVERS=memcached:11211
 {% endif -%}
     depends_on:
 {% if db_choice == "postgresql" -%}
@@ -30,6 +32,8 @@ services:
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
+{% elif cache_choice == "memcached" -%}
+      - memcached
 {% endif -%}
     volumes:
       - ../../backend:/app
@@ -66,15 +70,15 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=development
-{% if db_choice != "none" -%}
-{% if db_choice == "postgresql" -%}
+{%- if db_choice != "none" %}
+{%- if db_choice == "postgresql" %}
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/{{ project_name.replace('-', '_') }}
-{% elif db_choice == "mysql" -%}
+{%- elif db_choice == "mysql" %}
       - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
-{% elif db_choice == "sqlite" -%}
+{%- elif db_choice == "sqlite" %}
       - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
-{% endif -%}
-{% endif -%}
+{%- endif %}
+{%- endif %}
 {% if cache_choice == "redis" -%}
       - REDIS_URL=redis://redis:6379/0
 {% endif -%}
@@ -130,6 +134,15 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif cache_choice == "memcached" -%}
+  memcached:
+    image: memcached:1.6-alpine
+    ports:
+      - "11211:11211"
+    command: memcached -m 64
     networks:
       - {{ project_name.replace('-', '_') }}_network
 

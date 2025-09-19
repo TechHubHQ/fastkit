@@ -1,0 +1,177 @@
+"""RQ-based job scheduler."""
+
+import logging
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, Optional
+from rq import Queue, Worker
+from rq.job import Job
+from rq_scheduler import Scheduler as RQScheduler
+import redis
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class RQJobScheduler:
+    """RQ job scheduler."""
+    
+    def __init__(self):
+        """Initialize RQ scheduler."""
+        redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/0')
+        self.redis_conn = redis.from_url(redis_url)
+        self.queue = Queue(connection=self.redis_conn)
+        self.scheduler = RQScheduler(connection=self.redis_conn)
+        self._tasks = {}
+    
+    def task(self, 
+             name: Optional[str] = None,
+             schedule: Optional[Dict[str, Any]] = None,
+             queue: str = 'default',
+             **kwargs):
+        """Decorator to register a task."""
+        def decorator(func: Callable):
+            task_name = name or f"{func.__module__}.{func.__name__}"
+            
+            # Store task info
+            self._tasks[task_name] = {
+                'func': func,
+                'schedule': schedule,
+                'name': task_name,
+                'queue': queue,
+                'kwargs': kwargs
+            }
+            
+            # Schedule if schedule is provided
+            if schedule:
+                self._schedule_recurring_task(task_name, schedule)
+            
+            return func
+        
+        return decorator
+    
+    def _schedule_recurring_task(self, task_name: str, schedule: Dict[str, Any]):
+        """Schedule a recurring task."""
+        schedule_type = schedule.get('type', 'interval')
+        
+        if schedule_type == 'cron':
+            # RQ-Scheduler supports cron-like scheduling
+            cron_string = self._build_cron_string(schedule)
+            self.scheduler.cron(
+                cron_string=cron_string,
+                func=self._tasks[task_name]['func'],
+                queue_name=self._tasks[task_name]['queue']
+            )
+        elif schedule_type == 'interval':
+            interval_seconds = schedule.get('seconds', 60)
+            self.scheduler.schedule(
+                scheduled_time=datetime.utcnow(),
+                func=self._tasks[task_name]['func'],
+                interval=interval_seconds,
+                queue_name=self._tasks[task_name]['queue']
+            )
+    
+    def _build_cron_string(self, schedule: Dict[str, Any]) -> str:
+        """Build cron string from schedule config."""
+        minute = schedule.get('minute', '*')
+        hour = schedule.get('hour', '*')
+        day = schedule.get('day_of_month', '*')
+        month = schedule.get('month_of_year', '*')
+        day_of_week = schedule.get('day_of_week', '*')
+        
+        return f"{minute} {hour} {day} {month} {day_of_week}"
+    
+    def run_task(self, task_name: str, *args, **kwargs):
+        """Run a task immediately."""
+        if task_name in self._tasks:
+            task_info = self._tasks[task_name]
+            job = self.queue.enqueue(
+                task_info['func'],
+                *args,
+                **kwargs,
+                **task_info['kwargs']
+            )
+            return job.id
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    def schedule_task(self, task_name: str, when=None, *args, **kwargs):
+        """Schedule a task to run at a specific time."""
+        if task_name in self._tasks:
+            task_info = self._tasks[task_name]
+            
+            if when is None:
+                when = datetime.utcnow()
+            elif isinstance(when, (int, float)):
+                when = datetime.utcnow() + timedelta(seconds=when)
+            
+            job = self.scheduler.enqueue_at(
+                when,
+                task_info['func'],
+                *args,
+                **kwargs
+            )
+            return job.id
+        else:
+            raise ValueError(f"Task {task_name} not found")
+    
+    def get_task_status(self, job_id: str):
+        """Get the status of a task."""
+        job = Job.fetch(job_id, connection=self.redis_conn)
+        return {
+            'id': job.id,
+            'status': job.get_status(),
+            'result': job.result,
+            'created_at': job.created_at,
+            'started_at': job.started_at,
+            'ended_at': job.ended_at,
+            'exc_info': job.exc_info
+        }
+    
+    def cancel_task(self, job_id: str):
+        """Cancel a scheduled task."""
+        job = Job.fetch(job_id, connection=self.redis_conn)
+        job.cancel()
+        return True
+    
+    def list_tasks(self):
+        """List all registered tasks."""
+        return list(self._tasks.keys())
+    
+    def list_jobs(self, status=None):
+        """List jobs in the queue."""
+        if status == 'queued':
+            return [job.id for job in self.queue.jobs]
+        elif status == 'started':
+            return [job.id for job in self.queue.started_job_registry.get_job_ids()]
+        elif status == 'finished':
+            return [job.id for job in self.queue.finished_job_registry.get_job_ids()]
+        elif status == 'failed':
+            return [job.id for job in self.queue.failed_job_registry.get_job_ids()]
+        else:
+            return {
+                'queued': [job.id for job in self.queue.jobs],
+                'started': list(self.queue.started_job_registry.get_job_ids()),
+                'finished': list(self.queue.finished_job_registry.get_job_ids()),
+                'failed': list(self.queue.failed_job_registry.get_job_ids())
+            }
+    
+    def start_worker(self, queues=None, **kwargs):
+        """Start RQ worker."""
+        if queues is None:
+            queues = [self.queue]
+        
+        logger.info(f"Starting RQ worker for queues: {[q.name for q in queues]}")
+        worker = Worker(queues, connection=self.redis_conn)
+        worker.work(**kwargs)
+    
+    def start_scheduler(self, **kwargs):
+        """Start RQ scheduler."""
+        logger.info("Starting RQ scheduler...")
+        self.scheduler.run(**kwargs)
+
+
+# Global scheduler instance
+scheduler = RQJobScheduler()
+
+# Task decorator shortcut
+task = scheduler.task

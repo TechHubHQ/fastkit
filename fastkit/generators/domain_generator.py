@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
+from .dependency_manager import get_dependency_manager
 
 
 # Initialize Jinja2 environment
@@ -86,6 +87,83 @@ def scaffold_domain(
                 _create_basic_test_template(dest_path, file_name, context)
             else:
                 _render_and_write(template_path, dest_path, context)
+
+    # Detect and sync dependencies based on domain content
+    _sync_domain_dependencies(project_path, domain_name)
+
+
+def _sync_domain_dependencies(project_path: Path, domain_name: str) -> None:
+    """Detect and sync dependencies based on domain content."""
+    dep_manager = get_dependency_manager(project_path)
+
+    # Check if the project uses a database by looking for existing db services
+    app_path = project_path / "app"
+    database_detected = False
+
+    # Check for existing database configuration
+    config_path = app_path / "core" / "config.py"
+    if config_path.exists():
+        config_content = config_path.read_text(encoding='utf-8')
+
+        # Detect database type from configuration
+        if "postgresql://" in config_content or "psycopg2" in config_content:
+            dep_manager.sync_service_dependencies("db", "postgresql")
+            database_detected = True
+        elif "mysql://" in config_content or "pymysql" in config_content:
+            dep_manager.sync_service_dependencies("db", "mysql")
+            database_detected = True
+        elif "sqlite://" in config_content:
+            dep_manager.sync_service_dependencies("db", "sqlite")
+            database_detected = True
+        elif "mongodb://" in config_content or "motor" in config_content:
+            dep_manager.sync_service_dependencies("db", "mongodb")
+            database_detected = True
+        elif "mssql://" in config_content or "pyodbc" in config_content:
+            dep_manager.sync_service_dependencies("db", "mssql")
+            database_detected = True
+
+    # Check for existing database directory
+    if not database_detected:
+        db_path = app_path / "db"
+        if db_path.exists():
+            # If db directory exists, check what's in it to determine database type
+            db_files = list(db_path.glob("*.py"))
+            if db_files:
+                # Read database files to detect type
+                for db_file in db_files:
+                    content = db_file.read_text(encoding='utf-8')
+                    if "postgresql" in content.lower():
+                        dep_manager.sync_service_dependencies(
+                            "db", "postgresql")
+                        database_detected = True
+                        break
+                    elif "mysql" in content.lower():
+                        dep_manager.sync_service_dependencies("db", "mysql")
+                        database_detected = True
+                        break
+                    elif "mongodb" in content.lower() or "motor" in content.lower():
+                        dep_manager.sync_service_dependencies("db", "mongodb")
+                        database_detected = True
+                        break
+                    elif "mssql" in content.lower() or "pyodbc" in content.lower():
+                        dep_manager.sync_service_dependencies("db", "mssql")
+                        database_detected = True
+                        break
+
+    # Check the created domain model to see if it uses SQLAlchemy
+    domain_model_path = app_path / "domains" / domain_name / "models.py"
+    if domain_model_path.exists():
+        model_content = domain_model_path.read_text(encoding='utf-8')
+        if "sqlalchemy" in model_content.lower() and not database_detected:
+            # Domain uses SQLAlchemy but no specific database detected, default to SQLite
+            dep_manager.sync_service_dependencies("db", "sqlite")
+            database_detected = True
+
+    # Always add testing dependencies when creating domains with tests
+    dep_manager.sync_service_dependencies("testing", "pytest")
+
+    # Add validation dependencies (domains typically use Pydantic schemas)
+    dep_manager.sync_service_dependencies("validation", "pydantic")
 
 
 def _create_basic_test_template(dest_path: Path, file_name: str, context: dict) -> None:
