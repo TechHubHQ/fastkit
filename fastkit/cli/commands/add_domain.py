@@ -78,7 +78,7 @@ def add_domain(
         console.print("Aborting.")
         raise typer.Exit(code=1)
 
-    show_loading_animation()
+    show_loading_animation(f"Creating domain '{domain_name}'...")
 
     # Create the domain
     try:

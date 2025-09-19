@@ -49,8 +49,8 @@ jobs:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
+{% if include_docker %}
 
-{% if include_docker -%}
   docker-build:
     runs-on: ubuntu-latest
     needs: test
@@ -68,8 +68,8 @@ jobs:
     - name: Test Docker image
       run: |
         docker run --rm {{ project_name }}:latest python -c "import {{ project_name.replace('-', '_') }}; print('Import successful')"
+{% endif %}
 
-{% endif -%}
   security:
     runs-on: ubuntu-latest
     needs: test

@@ -1,5 +1,12 @@
 name: CD
 
+# SETUP REQUIRED:
+# Before using this workflow, configure the following repository secrets:
+{% if include_docker %}# - DOCKER_USERNAME: Your Docker Hub username
+# - DOCKER_PASSWORD: Your Docker Hub password or access token
+{% endif %}# - Add deployment-specific secrets (AWS keys, server credentials, etc.)
+# Go to: Repository Settings > Secrets and variables > Actions
+
 on:
   push:
     branches: [ main ]
@@ -8,7 +15,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: {% raw %}github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'){% endraw %}
 
     steps:
     - uses: actions/checkout@v4
@@ -28,22 +35,28 @@ jobs:
     - name: Run tests
       run: |
         uv run pytest
+{% if include_docker %}
 
-{% if include_docker -%}
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    # REQUIRED: Configure DOCKER_USERNAME and DOCKER_PASSWORD secrets in repository settings
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
-        username: {% raw %}${{ secrets.DOCKER_USERNAME }}{% endraw %}
-        password: {% raw %}${{ secrets.DOCKER_PASSWORD }}{% endraw %}
+        # TODO: Set your Docker Hub username and password secrets
+        # username: ${{ secrets.DOCKER_USERNAME }}
+        # password: ${{ secrets.DOCKER_PASSWORD }}
+        username:
+        password:
 
     - name: Extract metadata
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: {% raw %}${{ secrets.DOCKER_USERNAME }}{% endraw %}/{{ project_name }}
+        # REQUIRED: Set your Docker Hub username secret (DOCKER_USERNAME)
+        # images: ${{ secrets.DOCKER_USERNAME }}/{{ project_name }}
+        images:
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -60,23 +73,25 @@ jobs:
         labels: {% raw %}${{ steps.meta.outputs.labels }}{% endraw %}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-{% endif -%}
+{% endif %}
 
-    # Add your deployment steps here
+    # DEPLOYMENT CONFIGURATION REQUIRED:
+    # Replace the echo commands below with your actual deployment steps
     # Examples:
-    # - Deploy to AWS ECS
-    # - Deploy to Kubernetes
-    # - Deploy to Heroku
-    # - Deploy to DigitalOcean App Platform
+    # - Deploy to AWS ECS (requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY secrets)
+    # - Deploy to Kubernetes (requires KUBECONFIG secret)
+    # - Deploy to Heroku (requires HEROKU_API_KEY secret)
+    # - Deploy to DigitalOcean App Platform (requires DIGITALOCEAN_ACCESS_TOKEN secret)
+    # - Deploy to your own servers (requires SSH_PRIVATE_KEY, SERVER_HOST secrets)
 
     - name: Deploy to staging
-      if: github.ref == 'refs/heads/main'
+      if: {% raw %}github.ref == 'refs/heads/main'{% endraw %}
       run: |
         echo "Deploy to staging environment"
         # Add your staging deployment commands here
 
     - name: Deploy to production
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: {% raw %}startsWith(github.ref, 'refs/tags/v'){% endraw %}
       run: |
         echo "Deploy to production environment"
         # Add your production deployment commands here

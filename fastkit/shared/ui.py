@@ -93,11 +93,11 @@ def create_info_section():
     return info_text
 
 
-def show_loading_animation():
-    """Show a brief loading animation for modern feel"""
+def show_loading_animation(message: str = "Initializing FastKit..."):
+    """Show a brief loading animation with dynamic message"""
     with Progress(
         SpinnerColumn("dots", style="bright_cyan"),
-        TextColumn("[bright_white]Initializing FastKit..."),
+        TextColumn(f"[bright_white]{message}"),
         console=console,
         transient=True
     ) as progress:

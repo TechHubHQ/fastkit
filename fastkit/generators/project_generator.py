@@ -14,7 +14,7 @@ LanguageType = Literal["typescript", "javascript"]
 # Initialize Jinja2 environment
 _templates_dir = Path(__file__).parent / "templates"
 _env = Environment(loader=FileSystemLoader(_templates_dir),
-                   trim_blocks=True, lstrip_blocks=True)
+                   trim_blocks=False, lstrip_blocks=False)
 
 
 def _ensure_dir(path: Path) -> None:

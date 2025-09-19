@@ -235,7 +235,7 @@ def create_project(
         typer.echo("Aborting.")
         raise typer.Exit(code=1)
 
-    show_loading_animation()
+    show_loading_animation("Creating project structure...")
 
     scaffold_project_structure(
         base_path=target_dir,
