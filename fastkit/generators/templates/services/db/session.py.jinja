@@ -1,10 +1,9 @@
 """Database session management."""
 
+{% if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] -%}
 from app.core.config import settings
-from motor.motor_asyncio import AsyncIOMotorClient
 from .base import SessionLocal, engine, Base
 from sqlalchemy.orm import Session
-{ % if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] - %}
 
 
 def create_tables():
@@ -40,7 +39,9 @@ class DatabaseManager:
 # Global database manager instance
 db_manager = DatabaseManager()
 
-{ % elif db_choice == "mongodb" - %}
+{% elif db_choice == "mongodb" -%}
+from app.core.config import settings
+from motor.motor_asyncio import AsyncIOMotorClient
 
 
 class MongoDBManager:
@@ -70,4 +71,4 @@ class MongoDBManager:
 
 # Global MongoDB manager instance
 db_manager = MongoDBManager()
-{ % endif - %}
+{% endif -%}

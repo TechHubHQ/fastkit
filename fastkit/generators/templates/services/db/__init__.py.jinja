@@ -2,14 +2,44 @@
 
 {% if db_choice == "postgresql" -%}
 from .postgresql_client import db_client
+from .base import Base, get_db
+from .session import db_manager
+
+__all__ = ["db_client", "Base", "get_db", "db_manager"]
+
 {% elif db_choice == "mysql" -%}
 from .mysql_client import db_client
+from .base import Base, get_db
+from .session import db_manager
+
+__all__ = ["db_client", "Base", "get_db", "db_manager"]
+
 {% elif db_choice == "sqlite" -%}
 from .sqlite_client import db_client
+from .base import Base, get_db
+from .session import db_manager
+
+__all__ = ["db_client", "Base", "get_db", "db_manager"]
+
 {% elif db_choice == "mongodb" -%}
 from .mongodb_client import db_client
+from .session import db_manager
+
+__all__ = ["db_client", "db_manager"]
+
 {% elif db_choice == "mssql" -%}
 from .mssql_client import db_client
-{% endif -%}
+from .base import Base, get_db
+from .session import db_manager
 
-__all__ = ["db_client"]
+__all__ = ["db_client", "Base", "get_db", "db_manager"]
+
+{% else -%}
+# No database configured
+db_client = None
+Base = None
+get_db = None
+db_manager = None
+
+__all__ = ["db_client", "Base", "get_db", "db_manager"]
+{% endif -%}

@@ -9,32 +9,34 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic-settings>=2.0.0",
     "pytest>=7.0.0",
-{% if db_choice != "none" -%}
+    "pydantic>=2.0.0",
+    "pytest-asyncio>=0.21.0",
+{%- if db_choice != "none" %}
     "sqlalchemy>=2.0.0",
-{% if db_choice == "postgresql" -%}
+{%- if db_choice == "postgresql" %}
     "psycopg2-binary>=2.9.0",
-{% elif db_choice == "mysql" -%}
+{%- elif db_choice == "mysql" %}
     "pymysql>=1.0.0",
-{% elif db_choice == "sqlite" -%}
+{%- elif db_choice == "sqlite" %}
     # SQLite support is built into Python
-{% endif -%}
-{% endif -%}
-{% if cache_choice == "redis" -%}
+{%- endif %}
+{%- endif %}
+{%- if cache_choice == "redis" %}
     "redis>=4.0.0",
-{% elif cache_choice == "memcached" -%}
+{%- elif cache_choice == "memcached" %}
     "pymemcache>=4.0.0",
-{% elif cache_choice == "dynamodb" -%}
+{%- elif cache_choice == "dynamodb" %}
     "boto3>=1.26.0",
-{% elif cache_choice == "in-memory" -%}
+{%- elif cache_choice == "in-memory" %}
     "cachetools>=5.0.0",
-{% endif -%}
-{% if auth_type == "jwt" -%}
+{%- endif %}
+{%- if auth_type == "jwt" %}
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-{% elif auth_type == "oauth" -%}
+{%- elif auth_type == "oauth" %}
     "authlib>=1.2.0",
     "httpx>=0.24.0",
-{% endif -%}
+{%- endif %}
 ]
 
 [tool.uv]

@@ -1,8 +1,8 @@
 """PostgreSQL database client."""
 
 from sqlalchemy.orm import Session
-from .base import Base, engine
-from .session import SessionLocal, db_manager
+from .base import Base, engine, SessionLocal
+from .session import db_manager
 
 
 class PostgreSQLClient:
@@ -43,6 +43,39 @@ class PostgreSQLClient:
             return True
         except Exception:
             return False
+
+    def get_database_info(self):
+        """Get PostgreSQL database information."""
+        with self.engine.connect() as conn:
+            result = conn.execute("SELECT version()")
+            return result.fetchone()[0]
+
+    def get_table_sizes(self):
+        """Get sizes of all tables in the database."""
+        with self.engine.connect() as conn:
+            result = conn.execute("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+                FROM pg_tables 
+                WHERE schemaname NOT IN ('information_schema', 'pg_catalog')
+                ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+            """)
+            return result.fetchall()
+
+    def analyze_table(self, table_name: str):
+        """Analyze a table to update statistics."""
+        with self.engine.connect() as conn:
+            conn.execute(f"ANALYZE {table_name}")
+
+    def vacuum_table(self, table_name: str = None):
+        """Vacuum a specific table or all tables."""
+        with self.engine.connect() as conn:
+            if table_name:
+                conn.execute(f"VACUUM {table_name}")
+            else:
+                conn.execute("VACUUM")
 
 
 # Global database client instance

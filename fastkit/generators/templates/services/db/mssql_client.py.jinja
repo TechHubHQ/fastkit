@@ -1,8 +1,8 @@
 """Microsoft SQL Server database client."""
 
 from sqlalchemy.orm import Session
-from .base import Base, engine
-from .session import SessionLocal, db_manager
+from .base import Base, engine, SessionLocal
+from .session import db_manager
 
 
 class MSSQLClient:
@@ -44,11 +44,59 @@ class MSSQLClient:
         except Exception:
             return False
 
-    def get_server_info(self):
-        """Get SQL Server version and info."""
+    def get_database_info(self):
+        """Get SQL Server database information."""
         with self.engine.connect() as conn:
             result = conn.execute("SELECT @@VERSION")
             return result.fetchone()[0]
+
+    def get_table_sizes(self):
+        """Get sizes of all tables in the database."""
+        with self.engine.connect() as conn:
+            result = conn.execute("""
+                SELECT 
+                    t.NAME AS TableName,
+                    s.Name AS SchemaName,
+                    p.rows AS RowCounts,
+                    SUM(a.total_pages) * 8 AS TotalSpaceKB, 
+                    SUM(a.used_pages) * 8 AS UsedSpaceKB, 
+                    (SUM(a.total_pages) - SUM(a.used_pages)) * 8 AS UnusedSpaceKB
+                FROM 
+                    sys.tables t
+                INNER JOIN      
+                    sys.indexes i ON t.OBJECT_ID = i.object_id
+                INNER JOIN 
+                    sys.partitions p ON i.object_id = p.OBJECT_ID AND i.index_id = p.index_id
+                INNER JOIN 
+                    sys.allocation_units a ON p.partition_id = a.container_id
+                LEFT OUTER JOIN 
+                    sys.schemas s ON t.schema_id = s.schema_id
+                WHERE 
+                    t.NAME NOT LIKE 'dt%' 
+                    AND t.is_ms_shipped = 0
+                    AND i.OBJECT_ID > 255 
+                GROUP BY 
+                    t.Name, s.Name, p.Rows
+                ORDER BY 
+                    TotalSpaceKB DESC
+            """)
+            return result.fetchall()
+
+    def update_statistics(self, table_name: str = None):
+        """Update statistics for a table or all tables."""
+        with self.engine.connect() as conn:
+            if table_name:
+                conn.execute(f"UPDATE STATISTICS {table_name}")
+            else:
+                conn.execute("EXEC sp_updatestats")
+
+    def rebuild_index(self, table_name: str, index_name: str = None):
+        """Rebuild an index or all indexes on a table."""
+        with self.engine.connect() as conn:
+            if index_name:
+                conn.execute(f"ALTER INDEX {index_name} ON {table_name} REBUILD")
+            else:
+                conn.execute(f"ALTER INDEX ALL ON {table_name} REBUILD")
 
 
 # Global database client instance

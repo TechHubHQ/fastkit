@@ -7,47 +7,74 @@ from typing import Optional
 from rich.console import Console
 
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
+from fastkit.shared.service_help import display_domain_help, create_domain_examples_panel, create_domain_structure_panel
 from fastkit.generators.domain_generator import scaffold_domain
+from rich.columns import Columns
 
 console = Console()
 
 
 def add_domain(
-    domain_name: str = typer.Argument(
-        ..., help="Domain name (lowercase, e.g., users, products, orders, customers)"),
+    domain_name: Optional[str] = typer.Argument(
+        None,
+        help="🏷️  Domain name (e.g., users, products, orders, customers)",
+        metavar="DOMAIN_NAME"
+    ),
     path: Optional[Path] = typer.Option(
-        None, "--path", "-p", help="Path to the project root (defaults to current directory)"
+        None,
+        "--path",
+        "-p",
+        help="📁 Path to the project root (default: current directory)",
+        metavar="PATH"
     ),
     with_tests: bool = typer.Option(
-        True, "--with-tests/--no-tests", help="Create test files for the domain"
+        True,
+        "--with-tests/--no-tests",
+        help="🧪 Create test files for the domain"
     ),
     force: bool = typer.Option(
-        False, "--force", "-f", help="Overwrite existing domain if it exists"
+        False,
+        "--force",
+        "-f",
+        help="🔄 Overwrite existing domain if it exists"
+    ),
+    help_flag: bool = typer.Option(
+        False,
+        "--help",
+        "-h",
+        help="Show comprehensive domain guide",
+        is_eager=True
     )
 ):
-    """Add a new domain to an existing FastAPI project.
-    
-    A domain represents a business area or feature set in your application.
-    Each domain includes models, schemas, services, repositories, and routes.
-    
-    DOMAIN STRUCTURE:
-      models.py       Database models (SQLAlchemy/Motor)
-      schemas.py      Pydantic schemas for API validation
-      services.py     Business logic and domain services
-      repositories.py Data access layer
-      routes.py       API endpoints for the domain
-      dependencies.py Domain-specific dependencies
-      exceptions.py   Domain-specific exceptions
-    
-    EXAMPLES:
-      fastkit add-domain users      # User management domain
-      fastkit add-domain products   # Product catalog domain
-      fastkit add-domain orders     # Order processing domain
-      fastkit add-domain auth       # Authentication domain
-    
-    The domain will be created in app/domains/{domain_name}/ and
-    automatically integrated with your API routing.
     """
+    🏢 Add a business domain with clean architecture patterns.
+    
+    Creates a complete domain structure with models, schemas, services,
+    repositories, and routes. Each domain follows clean architecture
+    principles and integrates automatically with your API.
+    
+    🎯 COMMON DOMAINS:
+        • users, products, orders, payments, auth, analytics
+    
+    📁 GENERATED STRUCTURE:
+        • Complete domain files (models, schemas, services, routes)
+        • Clean architecture patterns
+        • Automatic API integration at /api/v1/{domain}s
+        • Optional test files
+    
+    📋 QUICK EXAMPLES:
+        fastkit add-domain users          # User management domain
+        fastkit add-domain products       # Product catalog
+        fastkit add-domain orders --no-tests  # Skip test files
+    
+    💡 TIP: Run 'fastkit add-domain --help' to see the complete domain guide
+         with structure details and more examples.
+    """
+    # Handle custom help display or missing arguments
+    if help_flag or domain_name is None:
+        display_domain_help()
+        raise typer.Exit()
+    
     console.clear()
     print_ascii_msg()
 

@@ -1,8 +1,8 @@
 """MySQL database client."""
 
 from sqlalchemy.orm import Session
-from .base import Base, engine
-from .session import SessionLocal, db_manager
+from .base import Base, engine, SessionLocal
+from .session import db_manager
 
 
 class MySQLClient:
@@ -43,6 +43,44 @@ class MySQLClient:
             return True
         except Exception:
             return False
+
+    def get_database_info(self):
+        """Get MySQL database information."""
+        with self.engine.connect() as conn:
+            result = conn.execute("SELECT VERSION()")
+            return result.fetchone()[0]
+
+    def get_table_sizes(self):
+        """Get sizes of all tables in the database."""
+        with self.engine.connect() as conn:
+            result = conn.execute("""
+                SELECT 
+                    table_name,
+                    ROUND(((data_length + index_length) / 1024 / 1024), 2) AS size_mb
+                FROM information_schema.TABLES 
+                WHERE table_schema = DATABASE()
+                ORDER BY (data_length + index_length) DESC
+            """)
+            return result.fetchall()
+
+    def optimize_table(self, table_name: str):
+        """Optimize a MySQL table."""
+        with self.engine.connect() as conn:
+            conn.execute(f"OPTIMIZE TABLE {table_name}")
+
+    def analyze_table(self, table_name: str):
+        """Analyze a table to update statistics."""
+        with self.engine.connect() as conn:
+            conn.execute(f"ANALYZE TABLE {table_name}")
+
+    def show_table_status(self, table_name: str = None):
+        """Show table status information."""
+        with self.engine.connect() as conn:
+            if table_name:
+                result = conn.execute(f"SHOW TABLE STATUS LIKE '{table_name}'")
+            else:
+                result = conn.execute("SHOW TABLE STATUS")
+            return result.fetchall()
 
 
 # Global database client instance

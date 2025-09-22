@@ -5,8 +5,11 @@ from pathlib import Path
 from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
 
-from .project_generator import _ensure_dir, _render_and_write
+from .utils import ensure_dir, render_and_write
 from .dependency_manager import get_dependency_manager
+from .db_generator import generate_database_setup, update_database_configuration, ensure_database_imports_in_main
+from .cache_generator import generate_cache_setup, update_cache_configuration, ensure_cache_imports_in_main
+from .auth_generator import generate_auth_setup, update_auth_configuration, ensure_auth_imports_in_main, generate_auth_dependencies
 
 
 def add_service_to_project(
@@ -117,96 +120,61 @@ def _create_service_files(
     elif service_type == "jobs":
         config["jobs_choice"] = service_provider
 
-    # Create service directory
-    service_dir = project_path / "app" / service_type
-    _ensure_dir(service_dir)
+    # Create service directory (except for db, cache, auth which are handled by unified generators)
+    if service_type not in ["db", "cache", "auth"]:
+        service_dir = project_path / "app" / service_type
+        ensure_dir(service_dir)
+    else:
+        service_dir = project_path / "app" / service_type  # For reference in other service types
 
     # Render service templates
     if service_type == "cache":
-        _render_and_write_with_env(
-            env, f"services/cache/__init__.py.jinja",
-            service_dir / "__init__.py", config
+        # Use the unified cache generator to ensure consistency with project creation
+        generate_cache_setup(
+            project_path,
+            service_provider,
+            config["project_name"],
+            template_env=env
         )
-
-        # Create specific cache client
-        if service_provider == "redis":
-            _render_and_write_with_env(
-                env, f"services/cache/redis_client.py.jinja",
-                service_dir / "redis_client.py", config
-            )
-        elif service_provider == "memcached":
-            _render_and_write_with_env(
-                env, f"services/cache/memcached_client.py.jinja",
-                service_dir / "memcached_client.py", config
-            )
-        elif service_provider == "dynamodb":
-            _render_and_write_with_env(
-                env, f"services/cache/dynamodb_client.py.jinja",
-                service_dir / "dynamodb_client.py", config
-            )
-        elif service_provider == "in-memory":
-            _render_and_write_with_env(
-                env, f"services/cache/memory_client.py.jinja",
-                service_dir / "memory_client.py", config
-            )
+        
+        # Update configuration files
+        update_cache_configuration(project_path, service_provider, config["project_name"])
+        
+        # Ensure proper imports in main.py
+        ensure_cache_imports_in_main(project_path, service_provider)
 
     elif service_type == "db":
-        _render_and_write_with_env(
-            env, f"services/db/__init__.py.jinja",
-            service_dir / "__init__.py", config
+        # Use the unified database generator to ensure consistency with project creation
+        generate_database_setup(
+            project_path,
+            service_provider,
+            config["project_name"],
+            template_env=env
         )
-        _render_and_write_with_env(
-            env, f"services/db/base.py.jinja",
-            service_dir / "base.py", config
-        )
-        _render_and_write_with_env(
-            env, f"services/db/session.py.jinja",
-            service_dir / "session.py", config
-        )
-
-        # Create specific database client based on provider
-        if service_provider == "postgresql":
-            _render_and_write_with_env(
-                env, f"services/db/postgresql_client.py.jinja",
-                service_dir / "postgresql_client.py", config
-            )
-        elif service_provider == "mysql":
-            _render_and_write_with_env(
-                env, f"services/db/mysql_client.py.jinja",
-                service_dir / "mysql_client.py", config
-            )
-        elif service_provider == "sqlite":
-            _render_and_write_with_env(
-                env, f"services/db/sqlite_client.py.jinja",
-                service_dir / "sqlite_client.py", config
-            )
-        elif service_provider == "mongodb":
-            _render_and_write_with_env(
-                env, f"services/db/mongodb_client.py.jinja",
-                service_dir / "mongodb_client.py", config
-            )
-        elif service_provider == "mssql":
-            _render_and_write_with_env(
-                env, f"services/db/mssql_client.py.jinja",
-                service_dir / "mssql_client.py", config
-            )
+        
+        # Update configuration files
+        update_database_configuration(project_path, service_provider, config["project_name"])
+        
+        # Ensure proper imports in main.py
+        ensure_database_imports_in_main(project_path, service_provider)
 
     elif service_type == "auth":
-        _render_and_write_with_env(
-            env, f"services/auth/__init__.py.jinja",
-            service_dir / "__init__.py", config
+        # Use the unified auth generator to ensure consistency with project creation
+        generate_auth_setup(
+            project_path,
+            service_provider,
+            config["project_name"],
+            template_env=env
         )
-
-        if service_provider == "jwt":
-            _render_and_write_with_env(
-                env, f"services/auth/jwt_provider.py.jinja",
-                service_dir / "jwt_provider.py", config
-            )
-        elif service_provider == "oauth":
-            _render_and_write_with_env(
-                env, f"services/auth/oauth_provider.py.jinja",
-                service_dir / "oauth_provider.py", config
-            )
+        
+        # Update configuration files
+        update_auth_configuration(project_path, service_provider, config["project_name"])
+        
+        # Ensure proper imports in main.py
+        ensure_auth_imports_in_main(project_path, service_provider)
+        
+        # Generate auth dependencies for FastAPI
+        generate_auth_dependencies(project_path, service_provider)
 
     elif service_type == "jobs":
         _render_and_write_with_env(
@@ -250,9 +218,7 @@ def _create_service_files(
 
 def _render_and_write_with_env(env: Environment, template_name: str, dest_path: Path, context: dict) -> None:
     """Render template with given environment and write to destination."""
-    template = env.get_template(template_name)
-    content = template.render(context)
-    dest_path.write_text(content, encoding='utf-8')
+    render_and_write(template_name, dest_path, context, env)
 
 
 def _update_config_files(project_path: Path, config: Dict[str, Any]) -> None:

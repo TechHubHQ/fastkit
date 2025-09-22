@@ -7,63 +7,72 @@ from typing import Optional
 from rich.console import Console
 
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
+from fastkit.shared.service_help import display_service_help, create_service_overview_table, create_service_examples_panel
 from fastkit.generators.service_generator import add_service_to_project
+from rich.columns import Columns
 
 console = Console()
 
 
 def add_service(
-    service_type: str = typer.Argument(
-        ..., help="Service type: 'db' (database), 'cache' (caching), 'auth' (authentication), 'jobs' (background jobs)"
+    service_type: Optional[str] = typer.Argument(
+        None,
+        help="🔧 Service type: db | cache | auth | jobs",
+        metavar="SERVICE_TYPE"
     ),
-    service_provider: str = typer.Argument(
-        ..., help="Provider: DB(postgresql|mysql|sqlite|mongodb|mssql) CACHE(redis|memcached|dynamodb|in-memory) AUTH(jwt|oauth) JOBS(celery|rq|apscheduler|dramatiq|arq)"
+    service_provider: Optional[str] = typer.Argument(
+        None,
+        help="⚙️  Provider: postgresql|mysql|sqlite|mongodb|mssql|redis|memcached|dynamodb|in-memory|jwt|oauth|celery|rq|apscheduler|dramatiq|arq",
+        metavar="PROVIDER"
     ),
     path: Optional[Path] = typer.Option(
-        None, "--path", "-p", help="Path to the project root (defaults to current directory)"
+        None,
+        "--path",
+        "-p",
+        help="📁 Path to the project root (default: current directory)",
+        metavar="PATH"
     ),
     force: bool = typer.Option(
-        False, "--force", "-f", help="Overwrite existing service if it exists"
+        False,
+        "--force",
+        "-f",
+        help="🔄 Overwrite existing service if it exists"
+    ),
+    help_flag: bool = typer.Option(
+        False,
+        "--help",
+        "-h",
+        help="Show comprehensive service guide",
+        is_eager=True
     )
 ):
-    """Add a new service to an existing FastAPI project.
-    
-    SERVICE TYPES:
-      db      Database services with ORM/ODM support
-      cache   Caching services for performance optimization  
-      auth    Authentication and authorization services
-      jobs    Background job scheduling and processing
-    
-    DATABASE PROVIDERS:
-      postgresql  PostgreSQL with SQLAlchemy (production-ready)
-      mysql       MySQL with SQLAlchemy (widely supported)
-      sqlite      SQLite with SQLAlchemy (development/testing)
-      mongodb     MongoDB with Motor (NoSQL document store)
-      mssql       Microsoft SQL Server with SQLAlchemy
-    
-    CACHE PROVIDERS:
-      redis       Redis in-memory cache (high performance)
-      memcached   Memcached distributed cache (simple & fast)
-      dynamodb    AWS DynamoDB cache (cloud-native)
-      in-memory   Local memory cache (development/testing)
-    
-    AUTH PROVIDERS:
-      jwt         JSON Web Token authentication
-      oauth       OAuth 2.0 authentication (Google, GitHub, etc.)
-    
-    JOB PROVIDERS:
-      celery      Celery distributed task queue (production-ready)
-      rq          Redis Queue simple job processing (lightweight)
-      apscheduler Advanced Python Scheduler (in-process)
-      dramatiq    Modern alternative to Celery (simple & reliable)
-      arq         Async Redis Queue (FastAPI-friendly)
-    
-    EXAMPLES:
-      fastkit add-service db postgresql
-      fastkit add-service cache redis
-      fastkit add-service auth jwt
-      fastkit add-service jobs celery
     """
+    🔧 Add a production-ready service to your FastAPI project.
+
+    This command integrates services with proper configuration, dependencies,
+    and best practices. Each service includes client setup, configuration
+    management, and integration patterns.
+
+    🎯 AVAILABLE SERVICES:
+        • Database (db)    - PostgreSQL, MySQL, SQLite, MongoDB, SQL Server
+        • Cache (cache)    - Redis, Memcached, DynamoDB, In-Memory
+        • Auth (auth)      - JWT tokens, OAuth 2.0
+        • Jobs (jobs)      - Celery, RQ, APScheduler, Dramatiq, ARQ
+
+    📋 QUICK EXAMPLES:
+        fastkit add-service db postgresql     # Production database
+        fastkit add-service cache redis       # High-performance cache
+        fastkit add-service auth jwt          # Token authentication
+        fastkit add-service jobs celery       # Background tasks
+
+    💡 TIP: Run 'fastkit add-service --help' to see the full service guide
+         with detailed comparisons and recommendations.
+    """
+    # Handle custom help display or missing arguments
+    if help_flag or service_type is None or service_provider is None:
+        display_service_help()
+        raise typer.Exit()
+    
     console.clear()
     print_ascii_msg()
 
@@ -87,34 +96,30 @@ def add_service(
     # Validate service type and provider
     if not _is_valid_service_combination(service_type, service_provider):
         console.print(
-            f"[bold red]Error:[/bold red] Invalid service combination '{service_type}' with '{service_provider}'.")
-        console.print("\n[bold]Available service combinations:[/bold]")
+            f"[bold red]❌ Error:[/bold red] Invalid service combination '{service_type}' with '{service_provider}'.\n")
         
-        console.print("\n[bold cyan]DATABASE SERVICES:[/bold cyan]")
-        console.print("  [green]fastkit add-service db postgresql[/green]  # PostgreSQL with SQLAlchemy")
-        console.print("  [green]fastkit add-service db mysql[/green]       # MySQL with SQLAlchemy")
-        console.print("  [green]fastkit add-service db sqlite[/green]      # SQLite with SQLAlchemy")
-        console.print("  [green]fastkit add-service db mongodb[/green]     # MongoDB with Motor")
-        console.print("  [green]fastkit add-service db mssql[/green]       # Microsoft SQL Server")
+        # Show beautiful service help
+        console.print("[bold bright_cyan]📖 Available Services Guide:[/bold bright_cyan]\n")
         
-        console.print("\n[bold cyan]CACHE SERVICES:[/bold cyan]")
-        console.print("  [green]fastkit add-service cache redis[/green]       # Redis in-memory cache")
-        console.print("  [green]fastkit add-service cache memcached[/green]   # Memcached distributed cache")
-        console.print("  [green]fastkit add-service cache dynamodb[/green]    # AWS DynamoDB cache")
-        console.print("  [green]fastkit add-service cache in-memory[/green]   # Local memory cache")
+        # Display service overview tables
+        service_panels = create_service_overview_table()
         
-        console.print("\n[bold cyan]AUTH SERVICES:[/bold cyan]")
-        console.print("  [green]fastkit add-service auth jwt[/green]    # JSON Web Token authentication")
-        console.print("  [green]fastkit add-service auth oauth[/green]  # OAuth 2.0 authentication")
+        # Display in 2x2 grid
+        top_row = Columns([service_panels[0], service_panels[1]], equal=True, expand=True)
+        bottom_row = Columns([service_panels[2], service_panels[3]], equal=True, expand=True)
         
-        console.print("\n[bold cyan]JOB SERVICES:[/bold cyan]")
-        console.print("  [green]fastkit add-service jobs celery[/green]      # Celery distributed task queue")
-        console.print("  [green]fastkit add-service jobs rq[/green]          # Redis Queue simple processing")
-        console.print("  [green]fastkit add-service jobs apscheduler[/green] # Advanced Python Scheduler")
-        console.print("  [green]fastkit add-service jobs dramatiq[/green]    # Modern Celery alternative")
-        console.print("  [green]fastkit add-service jobs arq[/green]         # Async Redis Queue")
+        console.print(top_row)
+        console.print()
+        console.print(bottom_row)
+        console.print()
         
-        console.print("\n[dim]Use --help for more detailed information about each service type.[/dim]")
+        # Show examples
+        examples_panel = create_service_examples_panel()
+        console.print(examples_panel)
+        console.print()
+        
+        console.print(
+            "[dim]💡 Use 'fastkit add-service --help' for the complete service guide.[/dim]")
         raise typer.Exit(code=1)
 
     # Check if service already exists
@@ -242,7 +247,7 @@ def _show_next_steps(service_type: str, service_provider: str):
             "2. Create your own tasks using the @task decorator")
         console.print(
             "3. Configure job schedules (cron, interval, one-time)")
-        
+
         if service_provider in ["celery", "rq", "dramatiq", "arq"]:
             console.print(
                 "4. Start Redis server for job queue backend")
@@ -251,7 +256,7 @@ def _show_next_steps(service_type: str, service_provider: str):
         elif service_provider == "apscheduler":
             console.print(
                 "4. Call scheduler.start() in your application startup")
-        
+
         console.print(
             "6. Monitor job execution and handle failures")
 

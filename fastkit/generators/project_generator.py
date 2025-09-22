@@ -2,6 +2,10 @@ from pathlib import Path
 from typing import Literal
 from jinja2 import Environment, FileSystemLoader
 from .dependency_manager import get_dependency_manager
+from .db_generator import generate_database_setup, update_database_configuration, ensure_database_imports_in_main
+from .cache_generator import generate_cache_setup, update_cache_configuration, ensure_cache_imports_in_main
+from .auth_generator import generate_auth_setup, update_auth_configuration, ensure_auth_imports_in_main, generate_auth_dependencies
+from .utils import ensure_dir, render_and_write
 
 
 AuthType = Literal["none", "jwt", "oauth"]
@@ -18,21 +22,20 @@ _env = Environment(loader=FileSystemLoader(_templates_dir),
                    trim_blocks=False, lstrip_blocks=False)
 
 
-def _ensure_dir(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+# Moved to utils.py to avoid circular imports
+# Use ensure_dir from .utils instead
 
 
 def _render_and_write(template_name: str, dest_path: Path, context: dict) -> None:
-    template = _env.get_template(template_name)
-    content = template.render(context)
-    dest_path.write_text(content, encoding='utf-8')
+    """Legacy wrapper for render_and_write - kept for backward compatibility."""
+    render_and_write(template_name, dest_path, context, _env)
 
 
 def _create_cicd_pipelines(base_path: Path, context: dict) -> None:
     """Create GitHub Actions CI/CD pipeline files."""
     github_dir = base_path / ".github"
     workflows_dir = github_dir / "workflows"
-    _ensure_dir(workflows_dir)
+    ensure_dir(workflows_dir)
 
     # Create CI pipeline
     _render_and_write("cicd/ci.yaml.jinja", workflows_dir / "ci.yaml", context)
@@ -49,7 +52,7 @@ def _create_docker_setup(base_path: Path, context: dict, architecture: str) -> N
     """Create Docker setup files."""
     infra_dir = base_path / "infra"
     docker_dir = infra_dir / "docker"
-    _ensure_dir(docker_dir)
+    ensure_dir(docker_dir)
 
     # Create docker-compose.yaml in infra/docker
     _render_and_write("docker/docker-compose.yaml.jinja",
@@ -101,7 +104,7 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
 
     # Create main app structure
     app_dir = base_path / "app"
-    _ensure_dir(app_dir)
+    ensure_dir(app_dir)
 
     # Core files
     _render_and_write(f"project/{template_prefix}/app/__init__.py.jinja",
@@ -111,7 +114,7 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
 
     # Core directory
     core_dir = app_dir / "core"
-    _ensure_dir(core_dir)
+    ensure_dir(core_dir)
     _render_and_write(f"project/{template_prefix}/app/core/__init__.py.jinja",
                       core_dir / "__init__.py", context)
     _render_and_write(f"project/{template_prefix}/app/core/config.py.jinja",
@@ -124,7 +127,7 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     # API directory
     api_dir = app_dir / "api"
     v1_dir = api_dir / "v1"
-    _ensure_dir(v1_dir)
+    ensure_dir(v1_dir)
     _render_and_write(f"project/{template_prefix}/app/api/__init__.py.jinja",
                       api_dir / "__init__.py", context)
     _render_and_write(f"project/{template_prefix}/app/api/v1/__init__.py.jinja",
@@ -134,7 +137,7 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
 
     # Domains directory (empty initially)
     domains_dir = app_dir / "domains"
-    _ensure_dir(domains_dir)
+    ensure_dir(domains_dir)
     _render_and_write(f"project/{template_prefix}/app/domains/__init__.py.jinja",
                       domains_dir / "__init__.py", context)
 
@@ -142,8 +145,8 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     shared_dir = app_dir / "shared"
     middleware_dir = shared_dir / "middleware"
     utils_dir = shared_dir / "utils"
-    _ensure_dir(middleware_dir)
-    _ensure_dir(utils_dir)
+    ensure_dir(middleware_dir)
+    ensure_dir(utils_dir)
 
     _render_and_write(f"project/{template_prefix}/app/shared/__init__.py.jinja",
                       shared_dir / "__init__.py", context)
@@ -164,49 +167,56 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     _render_and_write(f"project/{template_prefix}/app/shared/utils/helpers.py.jinja",
                       utils_dir / "helpers.py", context)
 
-    # Database directory
-    db_dir = app_dir / "db"
-    _ensure_dir(db_dir)
-    _render_and_write(f"project/{template_prefix}/app/db/__init__.py.jinja",
-                      db_dir / "__init__.py", context)
-    _render_and_write(f"project/{template_prefix}/app/db/base.py.jinja",
-                      db_dir / "base.py", context)
-    _render_and_write(f"project/{template_prefix}/app/db/session.py.jinja",
-                      db_dir / "session.py", context)
+    # Database directory - use unified database generation
+    if db_choice != "none":
+        # Use the unified database generator to ensure consistency with service addition
+        generate_database_setup(
+            base_path,
+            db_choice,
+            project_name,
+            template_env=_env
+        )
 
-    # Auth directory (if needed)
+        # Update configuration files
+        update_database_configuration(base_path, db_choice, project_name)
+
+        # Ensure proper imports in main.py
+        ensure_database_imports_in_main(base_path, db_choice)
+
+    # Auth directory - use unified auth generation
     if auth_type != "none":
-        auth_dir = app_dir / "auth"
-        _ensure_dir(auth_dir)
-        _render_and_write("services/auth/__init__.py.jinja",
-                          auth_dir / "__init__.py", context)
-        if auth_type == "jwt":
-            _render_and_write("services/auth/jwt_provider.py.jinja",
-                              auth_dir / "jwt_provider.py", context)
-        elif auth_type == "oauth":
-            _render_and_write("services/auth/oauth_provider.py.jinja",
-                              auth_dir / "oauth_provider.py", context)
+        # Use the unified auth generator to ensure consistency with service addition
+        generate_auth_setup(
+            base_path,
+            auth_type,
+            project_name,
+            template_env=_env
+        )
+        
+        # Update configuration files
+        update_auth_configuration(base_path, auth_type, project_name)
+        
+        # Ensure proper imports in main.py
+        ensure_auth_imports_in_main(base_path, auth_type)
+        
+        # Generate auth dependencies for FastAPI
+        generate_auth_dependencies(base_path, auth_type)
 
-    # Cache directory (if needed)
+    # Cache directory - use unified cache generation
     if cache_choice != "none":
-        cache_dir = app_dir / "cache"
-        _ensure_dir(cache_dir)
-        _render_and_write("services/cache/__init__.py.jinja",
-                          cache_dir / "__init__.py", context)
-
-        # Create specific cache client based on choice
-        if cache_choice == "redis":
-            _render_and_write("services/cache/redis_client.py.jinja",
-                              cache_dir / "redis_client.py", context)
-        elif cache_choice == "memcached":
-            _render_and_write("services/cache/memcached_client.py.jinja",
-                              cache_dir / "memcached_client.py", context)
-        elif cache_choice == "dynamodb":
-            _render_and_write("services/cache/dynamodb_client.py.jinja",
-                              cache_dir / "dynamodb_client.py", context)
-        elif cache_choice == "in-memory":
-            _render_and_write("services/cache/memory_client.py.jinja",
-                              cache_dir / "memory_client.py", context)
+        # Use the unified cache generator to ensure consistency with service addition
+        generate_cache_setup(
+            base_path,
+            cache_choice,
+            project_name,
+            template_env=_env
+        )
+        
+        # Update configuration files
+        update_cache_configuration(base_path, cache_choice, project_name)
+        
+        # Ensure proper imports in main.py
+        ensure_cache_imports_in_main(base_path, cache_choice)
 
     # Tests directory
     tests_dir = base_path / "tests"
@@ -214,9 +224,9 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
     integration_tests_dir = tests_dir / "integration"
     unit_tests_dir = tests_dir / "unit"
 
-    _ensure_dir(domains_tests_dir)
-    _ensure_dir(integration_tests_dir)
-    _ensure_dir(unit_tests_dir)
+    ensure_dir(domains_tests_dir)
+    ensure_dir(integration_tests_dir)
+    ensure_dir(unit_tests_dir)
 
     _render_and_write(f"project/{template_prefix}/tests/__init__.py.jinja",
                       tests_dir / "__init__.py", context)
@@ -236,7 +246,7 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
 
     # Infra directory - only create .gitkeep if no other content will be added
     infra_dir = base_path / "infra"
-    _ensure_dir(infra_dir)
+    ensure_dir(infra_dir)
     # Note: .gitkeep will be conditionally created later if infra remains empty
 
 
@@ -245,8 +255,8 @@ def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthT
     services_root = base_path / "services"
     shared_root = base_path / "shared"
 
-    _ensure_dir(services_root)
-    _ensure_dir(shared_root)
+    ensure_dir(services_root)
+    ensure_dir(shared_root)
 
     # Create shared libraries
     if config.get("include_shared", True):
@@ -255,7 +265,7 @@ def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthT
         shared_auth = shared_root / "auth"
 
         for d in [shared_models, shared_utils, shared_auth]:
-            _ensure_dir(d)
+            ensure_dir(d)
             _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
 
@@ -267,7 +277,7 @@ def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthT
 
         # Create gateway-specific files
         gateway_config = gateway_path / "app" / "gateway"
-        _ensure_dir(gateway_config)
+        ensure_dir(gateway_config)
         _render_and_write("project/microservices/gateway/routes.py.jinja",
                           gateway_config / "routes.py", {"services": config.get("services", [])})
 
@@ -301,7 +311,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
     infrastructure_dir = src_root / "infrastructure"
     presentation_dir = src_root / "presentation"
 
-    _ensure_dir(src_root)
+    ensure_dir(src_root)
 
     # Domain layer
     domain_entities = domain_dir / "entities"
@@ -310,7 +320,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
     domain_services = domain_dir / "services"
 
     for d in [domain_entities, domain_value_objects, domain_repositories, domain_services]:
-        _ensure_dir(d)
+        ensure_dir(d)
         _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
@@ -330,12 +340,12 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
         app_commands = application_dir / "commands"
         app_queries = application_dir / "queries"
         for d in [app_use_cases, app_dtos, app_interfaces, app_commands, app_queries]:
-            _ensure_dir(d)
+            ensure_dir(d)
             _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
     else:
         for d in [app_use_cases, app_dtos, app_interfaces]:
-            _ensure_dir(d)
+            ensure_dir(d)
             _render_and_write("services/app/__init__.py.jinja",
                               d / "__init__.py", {})
 
@@ -345,7 +355,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
     infra_repositories = infrastructure_dir / "repositories"
 
     for d in [infra_database, infra_external, infra_repositories]:
-        _ensure_dir(d)
+        ensure_dir(d)
         _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
@@ -355,7 +365,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
     pres_schemas = presentation_dir / "schemas"
 
     for d in [pres_api, pres_controllers, pres_schemas]:
-        _ensure_dir(d)
+        ensure_dir(d)
         _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
@@ -378,7 +388,7 @@ def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: 
     tests_integration = tests_root / "integration"
 
     for d in [tests_unit, tests_integration]:
-        _ensure_dir(d)
+        ensure_dir(d)
         _render_and_write("services/app/__init__.py.jinja",
                           d / "__init__.py", {})
 
@@ -428,63 +438,55 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
         tests_dir,
         infra_dir,
     ]:
-        _ensure_dir(d)
+        ensure_dir(d)
 
     if auth_type != "none":
-        _ensure_dir(auth_dir)
-        _render_and_write("services/auth/__init__.py.jinja",
-                          auth_dir / "__init__.py", context)
-        if auth_type == "jwt":
-            _render_and_write("services/auth/jwt_provider.py.jinja",
-                              auth_dir / "jwt_provider.py", context)
-        elif auth_type == "oauth":
-            _render_and_write("services/auth/oauth_provider.py.jinja",
-                              auth_dir / "oauth_provider.py", context)
+        # Use the unified auth generator to ensure consistency
+        generate_auth_setup(
+            service_path,
+            auth_type,
+            service_name,
+            template_env=_env
+        )
+        
+        # Update configuration files
+        update_auth_configuration(service_path, auth_type, service_name)
+        
+        # Ensure proper imports in main.py
+        ensure_auth_imports_in_main(service_path, auth_type)
+        
+        # Generate auth dependencies for FastAPI
+        generate_auth_dependencies(service_path, auth_type)
 
     if db_choice != "none":
-        _ensure_dir(db_dir)
-        _render_and_write("services/db/__init__.py.jinja",
-                          db_dir / "__init__.py", context)
-        _render_and_write("services/db/base.py.jinja",
-                          db_dir / "base.py", context)
-        _render_and_write("services/db/session.py.jinja",
-                          db_dir / "session.py", context)
+        # Use the unified database generator to ensure consistency
+        generate_database_setup(
+            service_path,
+            db_choice,
+            service_name,
+            template_env=_env
+        )
 
-        # Create specific database client based on choice
-        if db_choice == "postgresql":
-            _render_and_write("services/db/postgresql_client.py.jinja",
-                              db_dir / "postgresql_client.py", context)
-        elif db_choice == "mysql":
-            _render_and_write("services/db/mysql_client.py.jinja",
-                              db_dir / "mysql_client.py", context)
-        elif db_choice == "sqlite":
-            _render_and_write("services/db/sqlite_client.py.jinja",
-                              db_dir / "sqlite_client.py", context)
-        elif db_choice == "mongodb":
-            _render_and_write("services/db/mongodb_client.py.jinja",
-                              db_dir / "mongodb_client.py", context)
-        elif db_choice == "mssql":
-            _render_and_write("services/db/mssql_client.py.jinja",
-                              db_dir / "mssql_client.py", context)
+        # Update configuration files
+        update_database_configuration(service_path, db_choice, service_name)
+
+        # Ensure proper imports in main.py
+        ensure_database_imports_in_main(service_path, db_choice)
 
     if cache_choice != "none":
-        _ensure_dir(cache_dir)
-        _render_and_write("services/cache/__init__.py.jinja",
-                          cache_dir / "__init__.py", context)
-
-        # Create specific cache client based on choice
-        if cache_choice == "redis":
-            _render_and_write("services/cache/redis_client.py.jinja",
-                              cache_dir / "redis_client.py", context)
-        elif cache_choice == "memcached":
-            _render_and_write("services/cache/memcached_client.py.jinja",
-                              cache_dir / "memcached_client.py", context)
-        elif cache_choice == "dynamodb":
-            _render_and_write("services/cache/dynamodb_client.py.jinja",
-                              cache_dir / "dynamodb_client.py", context)
-        elif cache_choice == "in-memory":
-            _render_and_write("services/cache/memory_client.py.jinja",
-                              cache_dir / "memory_client.py", context)
+        # Use the unified cache generator to ensure consistency
+        generate_cache_setup(
+            service_path,
+            cache_choice,
+            service_name,
+            template_env=_env
+        )
+        
+        # Update configuration files
+        update_cache_configuration(service_path, cache_choice, service_name)
+        
+        # Ensure proper imports in main.py
+        ensure_cache_imports_in_main(service_path, cache_choice)
 
     _render_and_write("services/app/__init__.py.jinja",
                       src_app / "__init__.py", {"title": service_name})
@@ -561,7 +563,7 @@ def scaffold_project_structure(
 
     app_root = base_path
     # Ensure the root project directory exists
-    _ensure_dir(app_root)
+    ensure_dir(app_root)
 
     if architecture == "rest-apis":
         _scaffold_rest_api_service(app_root, project_name, auth_type,
@@ -572,9 +574,9 @@ def scaffold_project_structure(
         backend_dir = app_root / "backend"
         frontend_dir = app_root / "frontend"
         infra_dir = app_root / "infra"
-        _ensure_dir(backend_dir)
-        _ensure_dir(frontend_dir)
-        _ensure_dir(infra_dir)
+        ensure_dir(backend_dir)
+        ensure_dir(frontend_dir)
+        ensure_dir(infra_dir)
 
         # Backend part (same as rest-apis with domain structure)
         _scaffold_domain_structure(

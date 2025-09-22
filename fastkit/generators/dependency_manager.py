@@ -75,7 +75,7 @@ class DependencyManager:
             "rq": ["rq>=1.13.0", "redis>=4.0.0"],
             "dramatiq": ["dramatiq>=1.13.0", "redis>=4.0.0"],
         },
-        
+
         # Job scheduler dependencies
         "jobs": {
             "celery": ["celery>=5.2.0", "redis>=4.0.0"],

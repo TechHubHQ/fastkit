@@ -1,0 +1,31 @@
+"""Database base model with common fields and mixins."""
+
+{% if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] -%}
+from sqlalchemy import Column, DateTime
+from sqlalchemy.sql import func
+from .base import Base
+
+
+class TimestampMixin:
+    """Mixin to add timestamp fields to models."""
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class BaseModel(Base, TimestampMixin):
+    """Base model with common fields."""
+
+    __abstract__ = True
+
+
+# Export for easy importing
+__all__ = ["Base", "BaseModel", "TimestampMixin"]
+{% else -%}
+# Database not configured
+Base = None
+BaseModel = None
+TimestampMixin = None
+
+__all__ = ["Base", "BaseModel", "TimestampMixin"]
+{% endif -%}

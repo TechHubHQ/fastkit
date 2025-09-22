@@ -1,8 +1,8 @@
 """SQLite database client."""
 
 from sqlalchemy.orm import Session
-from .base import Base, engine, SessionLocal
-from .session import db_manager
+from .base import Base, engine
+from .session import SessionLocal, db_manager
 
 
 class SQLiteClient:
@@ -47,25 +47,6 @@ class SQLiteClient:
     def get_database_path(self) -> str:
         """Get the SQLite database file path."""
         return str(self.engine.url).replace("sqlite:///", "")
-
-    def vacuum(self):
-        """Optimize the SQLite database."""
-        with self.engine.connect() as conn:
-            conn.execute("VACUUM")
-
-    def get_table_info(self, table_name: str):
-        """Get information about a table."""
-        with self.engine.connect() as conn:
-            result = conn.execute(f"PRAGMA table_info({table_name})")
-            return result.fetchall()
-
-    def get_database_size(self) -> int:
-        """Get the size of the SQLite database file in bytes."""
-        import os
-        db_path = self.get_database_path()
-        if os.path.exists(db_path):
-            return os.path.getsize(db_path)
-        return 0
 
 
 # Global database client instance

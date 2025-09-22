@@ -129,13 +129,41 @@ def _get_onion_architecture_config() -> dict:
 
 def create_project(
     project_name: Optional[str] = typer.Argument(
-        None, help="Name of the project to create (e.g., myapp)"
+        None,
+        help="🏷️  Name of the project to create (e.g., my-awesome-api)",
+        metavar="PROJECT_NAME"
     ),
     path: Optional[Path] = typer.Option(
-        None, "--path", "-p", help="Directory to create the project in"
+        None,
+        "--path",
+        "-p",
+        help="📁 Directory to create the project in (default: current directory)",
+        metavar="PATH"
     ),
 ):
-    """Create a new FastAPI project via an interactive wizard (structure only)."""
+    """
+    🏗️  Create a new FastAPI project with modern architecture patterns.
+
+    This command creates a complete FastAPI project structure with your choice of:
+
+    🏛️  ARCHITECTURES:
+        • REST API Service     - Single service with clean domain structure
+        • Fullstack App        - Backend + Frontend + Infrastructure
+        • Microservices        - Multiple services with API gateway
+        • Onion Architecture   - Domain-driven design with clean architecture
+
+    🔧 INTEGRATIONS:
+        • Database: PostgreSQL, MySQL, SQLite, MongoDB, SQL Server
+        • Cache: Redis, Memcached, DynamoDB, In-Memory
+        • Auth: JWT tokens, OAuth 2.0
+        • CI/CD: GitHub Actions workflows
+        • Docker: Multi-stage builds and compose files
+
+    📋 EXAMPLES:
+        fastkit create-project my-api
+        fastkit create-project blog-app --path ~/projects
+        fastkit create-project ecommerce-backend
+    """
     console.clear()
     print_ascii_msg()
 

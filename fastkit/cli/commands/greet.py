@@ -15,7 +15,16 @@ greetings = [
 
 
 def greet(name: str):
-    """Greets the user with a styled message"""
+    """
+    🎉 Greet someone with style (demo command).
+
+    A fun demonstration command that shows off FastKit's
+    rich console styling capabilities.
+
+    📋 EXAMPLE:
+        fastkit greet Alice
+        fastkit greet "John Doe"
+    """
     # Pick a random greeting style
     greeting_text, emoji, color = random.choice(greetings)
 

@@ -9,7 +9,12 @@ console = Console()
 
 
 def version():
-    """Show FastKit version and system information"""
+    """
+    📋 Show FastKit version and system information.
+
+    Displays detailed information about your FastKit installation,
+    system environment, and available features.
+    """
 
     # Main version display
     console.print()
