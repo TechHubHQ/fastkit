@@ -86,7 +86,7 @@ def send_webhook(url: str, payload: dict):
     return f"Webhook sent to {url}"
 
 
-{ % if jobs_choice == "arq" - %}
+{% if jobs_choice == "arq" -%}
 # ARQ-specific async tasks
 
 
@@ -109,4 +109,4 @@ async def async_cleanup_task():
     logger.info("Running async cleanup task...")
     # Add your async cleanup logic here
     return "Async cleanup completed"
-{ % endif - %}
+{% endif -%}
