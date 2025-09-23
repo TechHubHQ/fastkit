@@ -33,7 +33,7 @@ def generate_auth_setup(
         cleanup_auth_config(project_path)
         cleanup_auth_imports(project_path)
         cleanup_auth_dependencies(project_path)
-    
+
     if auth_type == "none":
         return
 

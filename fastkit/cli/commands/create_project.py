@@ -397,30 +397,33 @@ def create_project(
     if target_dir.exists() and any(target_dir.iterdir()):
         # Check if it's a FastKit project
         is_fastkit = is_fastkit_project(target_dir)
-        
+
         if is_fastkit:
-            console.print(f"[yellow]⚠️  FastKit project detected in '{target_dir}'[/yellow]")
+            console.print(
+                f"[yellow]⚠️  FastKit project detected in '{target_dir}'[/yellow]")
             overwrite = typer.confirm(
-                "This will completely replace the existing FastKit project with a new one. All current files will be removed. Continue?", 
+                "This will completely replace the existing FastKit project with a new one. All current files will be removed. Continue?",
                 default=False
             )
         else:
-            console.print(f"[yellow]⚠️  Directory '{target_dir}' is not empty[/yellow]")
+            console.print(
+                f"[yellow]⚠️  Directory '{target_dir}' is not empty[/yellow]")
             overwrite = typer.confirm(
-                "This will clean up the directory and create a new FastKit project. Continue?", 
+                "This will clean up the directory and create a new FastKit project. Continue?",
                 default=False
             )
-        
+
         if not overwrite:
             typer.echo("Aborting.")
             raise typer.Exit(code=1)
         else:
             # Clean up the existing project directory
             if is_fastkit:
-                console.print("[yellow]🧹 Cleaning up existing FastKit project...[/yellow]")
+                console.print(
+                    "[yellow]🧹 Cleaning up existing FastKit project...[/yellow]")
             else:
                 console.print("[yellow]🧹 Cleaning up directory...[/yellow]")
-            
+
             cleanup_existing_project(target_dir)
             console.print("[green]✓ Cleanup completed[/green]")
             console.print()

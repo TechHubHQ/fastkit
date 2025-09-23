@@ -32,7 +32,7 @@ def generate_cache_setup(
         cleanup_cache_files(project_path)
         cleanup_cache_config(project_path)
         cleanup_cache_imports(project_path)
-    
+
     if cache_choice == "none":
         return
 

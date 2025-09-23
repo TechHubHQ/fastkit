@@ -43,7 +43,7 @@ def add_service_to_project(
 
     # Clean up old dependencies and sync new ones
     cleanup_dependencies_from_pyproject(project_path, service_type)
-    
+
     # Sync dependencies using dependency manager
     dep_manager = get_dependency_manager(project_path)
     dep_manager.sync_service_dependencies(service_type, service_provider)

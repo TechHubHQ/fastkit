@@ -32,7 +32,7 @@ def generate_database_setup(
         cleanup_database_files(project_path)
         cleanup_database_config(project_path)
         cleanup_database_imports(project_path)
-    
+
     if db_choice == "none":
         return
 
