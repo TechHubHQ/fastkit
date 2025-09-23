@@ -88,8 +88,6 @@ def send_webhook(url: str, payload: dict):
 
 {% if jobs_choice == "arq" -%}
 # ARQ-specific async tasks
-
-
 @task(name="async_hello_world")
 async def async_hello_world(name: str = "World"):
     """Async hello world task for ARQ."""
