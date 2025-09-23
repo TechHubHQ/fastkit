@@ -72,7 +72,7 @@ def add_service(
     if help_flag or service_type is None or service_provider is None:
         display_service_help()
         raise typer.Exit()
-    
+
     console.clear()
     print_ascii_msg()
 
@@ -97,27 +97,30 @@ def add_service(
     if not _is_valid_service_combination(service_type, service_provider):
         console.print(
             f"[bold red]❌ Error:[/bold red] Invalid service combination '{service_type}' with '{service_provider}'.\n")
-        
+
         # Show beautiful service help
-        console.print("[bold bright_cyan]📖 Available Services Guide:[/bold bright_cyan]\n")
-        
+        console.print(
+            "[bold bright_cyan]📖 Available Services Guide:[/bold bright_cyan]\n")
+
         # Display service overview tables
         service_panels = create_service_overview_table()
-        
+
         # Display in 2x2 grid
-        top_row = Columns([service_panels[0], service_panels[1]], equal=True, expand=True)
-        bottom_row = Columns([service_panels[2], service_panels[3]], equal=True, expand=True)
-        
+        top_row = Columns(
+            [service_panels[0], service_panels[1]], equal=True, expand=True)
+        bottom_row = Columns(
+            [service_panels[2], service_panels[3]], equal=True, expand=True)
+
         console.print(top_row)
         console.print()
         console.print(bottom_row)
         console.print()
-        
+
         # Show examples
         examples_panel = create_service_examples_panel()
         console.print(examples_panel)
         console.print()
-        
+
         console.print(
             "[dim]💡 Use 'fastkit add-service --help' for the complete service guide.[/dim]")
         raise typer.Exit(code=1)

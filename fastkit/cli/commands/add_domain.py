@@ -48,25 +48,25 @@ def add_domain(
 ):
     """
     🏢 Add a business domain with clean architecture patterns.
-    
+
     Creates a complete domain structure with models, schemas, services,
     repositories, and routes. Each domain follows clean architecture
     principles and integrates automatically with your API.
-    
+
     🎯 COMMON DOMAINS:
         • users, products, orders, payments, auth, analytics
-    
+
     📁 GENERATED STRUCTURE:
         • Complete domain files (models, schemas, services, routes)
         • Clean architecture patterns
         • Automatic API integration at /api/v1/{domain}s
         • Optional test files
-    
+
     📋 QUICK EXAMPLES:
         fastkit add-domain users          # User management domain
         fastkit add-domain products       # Product catalog
         fastkit add-domain orders --no-tests  # Skip test files
-    
+
     💡 TIP: Run 'fastkit add-domain --help' to see the complete domain guide
          with structure details and more examples.
     """
@@ -74,7 +74,7 @@ def add_domain(
     if help_flag or domain_name is None:
         display_domain_help()
         raise typer.Exit()
-    
+
     console.clear()
     print_ascii_msg()
 

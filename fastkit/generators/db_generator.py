@@ -128,9 +128,6 @@ def _generate_db_client_files(
         )
 
 
-
-
-
 def update_database_configuration(
     project_path: Path,
     db_choice: str,

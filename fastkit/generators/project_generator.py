@@ -192,13 +192,13 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
             project_name,
             template_env=_env
         )
-        
+
         # Update configuration files
         update_auth_configuration(base_path, auth_type, project_name)
-        
+
         # Ensure proper imports in main.py
         ensure_auth_imports_in_main(base_path, auth_type)
-        
+
         # Generate auth dependencies for FastAPI
         generate_auth_dependencies(base_path, auth_type)
 
@@ -211,10 +211,10 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
             project_name,
             template_env=_env
         )
-        
+
         # Update configuration files
         update_cache_configuration(base_path, cache_choice, project_name)
-        
+
         # Ensure proper imports in main.py
         ensure_cache_imports_in_main(base_path, cache_choice)
 
@@ -448,13 +448,13 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
             service_name,
             template_env=_env
         )
-        
+
         # Update configuration files
         update_auth_configuration(service_path, auth_type, service_name)
-        
+
         # Ensure proper imports in main.py
         ensure_auth_imports_in_main(service_path, auth_type)
-        
+
         # Generate auth dependencies for FastAPI
         generate_auth_dependencies(service_path, auth_type)
 
@@ -481,10 +481,10 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
             service_name,
             template_env=_env
         )
-        
+
         # Update configuration files
         update_cache_configuration(service_path, cache_choice, service_name)
-        
+
         # Ensure proper imports in main.py
         ensure_cache_imports_in_main(service_path, cache_choice)
 

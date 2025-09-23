@@ -125,7 +125,8 @@ def _create_service_files(
         service_dir = project_path / "app" / service_type
         ensure_dir(service_dir)
     else:
-        service_dir = project_path / "app" / service_type  # For reference in other service types
+        # For reference in other service types
+        service_dir = project_path / "app" / service_type
 
     # Render service templates
     if service_type == "cache":
@@ -136,10 +137,11 @@ def _create_service_files(
             config["project_name"],
             template_env=env
         )
-        
+
         # Update configuration files
-        update_cache_configuration(project_path, service_provider, config["project_name"])
-        
+        update_cache_configuration(
+            project_path, service_provider, config["project_name"])
+
         # Ensure proper imports in main.py
         ensure_cache_imports_in_main(project_path, service_provider)
 
@@ -151,10 +153,11 @@ def _create_service_files(
             config["project_name"],
             template_env=env
         )
-        
+
         # Update configuration files
-        update_database_configuration(project_path, service_provider, config["project_name"])
-        
+        update_database_configuration(
+            project_path, service_provider, config["project_name"])
+
         # Ensure proper imports in main.py
         ensure_database_imports_in_main(project_path, service_provider)
 
@@ -166,13 +169,14 @@ def _create_service_files(
             config["project_name"],
             template_env=env
         )
-        
+
         # Update configuration files
-        update_auth_configuration(project_path, service_provider, config["project_name"])
-        
+        update_auth_configuration(
+            project_path, service_provider, config["project_name"])
+
         # Ensure proper imports in main.py
         ensure_auth_imports_in_main(project_path, service_provider)
-        
+
         # Generate auth dependencies for FastAPI
         generate_auth_dependencies(project_path, service_provider)
 
@@ -181,7 +185,7 @@ def _create_service_files(
             env, f"services/jobs/__init__.py.jinja",
             service_dir / "__init__.py", config
         )
-        
+
         # Create specific job scheduler based on provider
         if service_provider == "celery":
             _render_and_write_with_env(
@@ -208,7 +212,7 @@ def _create_service_files(
                 env, f"services/jobs/arq_scheduler.py.jinja",
                 service_dir / "arq_scheduler.py", config
             )
-        
+
         # Create example tasks file
         _render_and_write_with_env(
             env, f"services/jobs/tasks.py.jinja",

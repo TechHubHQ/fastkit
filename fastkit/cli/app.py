@@ -320,11 +320,11 @@ app.command(
     help="🔧 Add services to existing project: DB | CACHE | AUTH | JOBS"
 )(add_service)
 
-# Helper commands for guides
 @app.command(name="services", help="📖 Show comprehensive service guide with comparisons")
 def services_guide():
     """Display the comprehensive service guide."""
     display_service_help()
+
 
 @app.command(name="domains", help="📖 Show comprehensive domain guide with examples")
 def domains_guide():

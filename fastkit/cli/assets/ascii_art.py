@@ -44,6 +44,7 @@ def get_success_icon():
     """
     return "OK"
 
+
 def get_error_icon():
     """
     Returns an error icon
@@ -52,6 +53,7 @@ def get_error_icon():
         str: Error icon
     """
     return "ERR"
+
 
 def get_warning_icon():
     """
