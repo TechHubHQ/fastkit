@@ -179,14 +179,12 @@ def add_service(
 
 def _is_valid_fastkit_project(project_path: Path) -> bool:
     """Check if the current directory is a valid FastKit project."""
-    required_paths = [
-        project_path / "app",
-        project_path / "app" / "core",
-        project_path / "app" / "main.py",
-        project_path / "pyproject.toml"
-    ]
-
-    return all(path.exists() for path in required_paths)
+    # Delegate to the central detector used across generators
+    try:
+        from fastkit.shared.project_utils import is_valid_fastkit_project
+        return is_valid_fastkit_project(project_path)
+    except Exception:
+        return False
 
 
 def _is_valid_service_combination(service_type: str, service_provider: str) -> bool:

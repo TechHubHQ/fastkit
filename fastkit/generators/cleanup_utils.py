@@ -5,42 +5,6 @@ from pathlib import Path
 from typing import List, Set
 
 
-def is_fastkit_project(project_path: Path) -> bool:
-    """Check if a directory contains a FastKit project.
-
-    Returns True if the directory appears to contain a FastKit-generated project.
-    """
-    if not project_path.exists():
-        return False
-
-    # Check for FastKit-specific indicators
-    fastkit_indicators = [
-        "app/main.py",
-        "app/core/config.py",
-        "app/api/v1",
-        "pyproject.toml"
-    ]
-
-    # Check if pyproject.toml contains FastKit-specific content
-    pyproject_path = project_path / "pyproject.toml"
-    if pyproject_path.exists():
-        try:
-            content = pyproject_path.read_text(encoding='utf-8')
-            if "fastapi" in content.lower() and "uvicorn" in content.lower():
-                return True
-        except (OSError, UnicodeDecodeError):
-            pass
-
-    # Check for FastKit directory structure
-    indicator_count = 0
-    for indicator in fastkit_indicators:
-        if (project_path / indicator).exists():
-            indicator_count += 1
-
-    # If we find at least 2 indicators, it's likely a FastKit project
-    return indicator_count >= 2
-
-
 def cleanup_cache_files(project_path: Path) -> None:
     """Remove all existing cache-related files."""
     cache_dir = project_path / "app" / "cache"

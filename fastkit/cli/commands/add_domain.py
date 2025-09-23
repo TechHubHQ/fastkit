@@ -238,15 +238,12 @@ def add_domain(
 
 def _is_valid_fastkit_project(project_path: Path) -> bool:
     """Check if the current directory is a valid FastKit project with domain structure."""
-    required_paths = [
-        project_path / "app",
-        project_path / "app" / "domains",
-        project_path / "app" / "api",
-        project_path / "app" / "core",
-        project_path / "app" / "main.py"
-    ]
-
-    return all(path.exists() for path in required_paths)
+    # Prefer the shared detector for consistency
+    try:
+        from fastkit.shared.project_utils import is_valid_fastkit_project
+        return is_valid_fastkit_project(project_path)
+    except Exception:
+        return False
 
 
 def _is_valid_domain_name(name: str) -> bool:

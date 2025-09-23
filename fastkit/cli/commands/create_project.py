@@ -9,9 +9,10 @@ from rich.table import Table
 from rich.text import Text
 from rich.align import Align
 
+from fastkit.shared.project_utils import is_valid_fastkit_project
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
 from fastkit.generators.project_generator import scaffold_project_structure
-from fastkit.generators.cleanup_utils import cleanup_existing_project, is_fastkit_project
+from fastkit.generators.cleanup_utils import cleanup_existing_project
 
 
 console = Console()
@@ -396,7 +397,7 @@ def create_project(
 
     if target_dir.exists() and any(target_dir.iterdir()):
         # Check if it's a FastKit project
-        is_fastkit = is_fastkit_project(target_dir)
+        is_fastkit = is_valid_fastkit_project(target_dir)
 
         if is_fastkit:
             console.print(
