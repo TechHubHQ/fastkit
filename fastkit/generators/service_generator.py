@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 
 from .utils import ensure_dir, render_and_write
 from .dependency_manager import get_dependency_manager
-from .db_generator import generate_database_setup, update_database_configuration, ensure_database_imports_in_main
+from .db_generator import generate_database_setup, update_database_configuration
 from .cache_generator import generate_cache_setup, update_cache_configuration, ensure_cache_imports_in_main
 from .auth_generator import generate_auth_setup, update_auth_configuration, ensure_auth_imports_in_main, generate_auth_dependencies
 
@@ -157,9 +157,6 @@ def _create_service_files(
         # Update configuration files
         update_database_configuration(
             project_path, service_provider, config["project_name"])
-
-        # Ensure proper imports in main.py
-        ensure_database_imports_in_main(project_path, service_provider)
 
     elif service_type == "auth":
         # Use the unified auth generator to ensure consistency with project creation

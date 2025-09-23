@@ -49,9 +49,6 @@ def generate_database_setup(
     # Generate core database files
     _generate_core_db_files(db_dir, context, template_env)
 
-    # Generate database-specific client files
-    _generate_db_client_files(db_dir, db_choice, context, template_env)
-
 
 def _generate_core_db_files(
     db_dir: Path,
@@ -91,41 +88,6 @@ def _generate_core_db_files(
         context,
         template_env
     )
-
-
-def _generate_db_client_files(
-    db_dir: Path,
-    db_choice: str,
-    context: Dict[str, Any],
-    template_env: Environment
-) -> None:
-    """Generate database-specific client files."""
-
-    # Map database choices to their client template files
-    client_templates = {
-        "postgresql": "services/db/postgresql_client.py.jinja",
-        "mysql": "services/db/mysql_client.py.jinja",
-        "sqlite": "services/db/sqlite_client.py.jinja",
-        "mongodb": "services/db/mongodb_client.py.jinja",
-        "mssql": "services/db/mssql_client.py.jinja"
-    }
-
-    # Map database choices to their client file names
-    client_files = {
-        "postgresql": "postgresql_client.py",
-        "mysql": "mysql_client.py",
-        "sqlite": "sqlite_client.py",
-        "mongodb": "mongodb_client.py",
-        "mssql": "mssql_client.py"
-    }
-
-    if db_choice in client_templates:
-        render_and_write(
-            client_templates[db_choice],
-            db_dir / client_files[db_choice],
-            context,
-            template_env
-        )
 
 
 def update_database_configuration(
@@ -180,35 +142,3 @@ def _generate_database_config_section(db_choice: str, project_name: str) -> str:
     }
 
     return db_configs.get(db_choice, "")
-
-
-def ensure_database_imports_in_main(project_path: Path, db_choice: str) -> None:
-    """Ensure database imports are properly set up in main.py."""
-    if db_choice == "none":
-        return
-
-    main_path = project_path / "app" / "main.py"
-    if not main_path.exists():
-        return
-
-    content = main_path.read_text(encoding='utf-8')
-
-    # Check if database imports already exist
-    if "from app.db" in content:
-        return
-
-    # Add database imports after other imports
-    import_line = "from app.db.session import db_manager"
-
-    # Find the last import line and add after it
-    lines = content.split('\n')
-    last_import_index = -1
-
-    for i, line in enumerate(lines):
-        if line.strip().startswith('from ') or line.strip().startswith('import '):
-            last_import_index = i
-
-    if last_import_index >= 0:
-        lines.insert(last_import_index + 1, import_line)
-        content = '\n'.join(lines)
-        main_path.write_text(content, encoding='utf-8')

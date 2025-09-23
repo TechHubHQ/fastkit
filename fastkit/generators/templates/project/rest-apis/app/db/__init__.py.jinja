@@ -1,15 +1,20 @@
-"""Database service module."""
+"""Database exports for application use."""
 
-{% if db_choice == "postgresql" -%}
-from .postgresql_client import db_client
-{% elif db_choice == "mysql" -%}
-from .mysql_client import db_client
-{% elif db_choice == "sqlite" -%}
-from .sqlite_client import db_client
+{% if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] -%}
+from .base import Base, get_db, SessionLocal, engine
+
+__all__ = ["Base", "get_db", "SessionLocal", "engine"]
+
 {% elif db_choice == "mongodb" -%}
-from .mongodb_client import db_client
-{% elif db_choice == "mssql" -%}
-from .mssql_client import db_client
-{% endif -%}
+from .session import get_mongo_db, connect_to_mongo, close_mongo_connection
 
-__all__ = ["db_client"]
+__all__ = ["get_mongo_db", "connect_to_mongo", "close_mongo_connection"]
+
+{% else -%}
+Base = None
+get_db = None
+SessionLocal = None
+engine = None
+
+__all__ = ["Base", "get_db", "SessionLocal", "engine"]
+{% endif -%}

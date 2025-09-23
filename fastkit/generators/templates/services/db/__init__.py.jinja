@@ -1,45 +1,21 @@
 """Database service module."""
 
-{% if db_choice == "postgresql" -%}
-from .postgresql_client import db_client
-from .base import Base, get_db
-from .session import db_manager
+{% if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] -%}
+from .base import Base, get_db, SessionLocal, engine
 
-__all__ = ["db_client", "Base", "get_db", "db_manager"]
-
-{% elif db_choice == "mysql" -%}
-from .mysql_client import db_client
-from .base import Base, get_db
-from .session import db_manager
-
-__all__ = ["db_client", "Base", "get_db", "db_manager"]
-
-{% elif db_choice == "sqlite" -%}
-from .sqlite_client import db_client
-from .base import Base, get_db
-from .session import db_manager
-
-__all__ = ["db_client", "Base", "get_db", "db_manager"]
+__all__ = ["Base", "get_db", "SessionLocal", "engine"]
 
 {% elif db_choice == "mongodb" -%}
-from .mongodb_client import db_client
-from .session import db_manager
+from .session import get_mongo_db, connect_to_mongo, close_mongo_connection
 
-__all__ = ["db_client", "db_manager"]
-
-{% elif db_choice == "mssql" -%}
-from .mssql_client import db_client
-from .base import Base, get_db
-from .session import db_manager
-
-__all__ = ["db_client", "Base", "get_db", "db_manager"]
+__all__ = ["get_mongo_db", "connect_to_mongo", "close_mongo_connection"]
 
 {% else -%}
 # No database configured
-db_client = None
 Base = None
 get_db = None
-db_manager = None
+SessionLocal = None
+engine = None
 
-__all__ = ["db_client", "Base", "get_db", "db_manager"]
+__all__ = ["Base", "get_db", "SessionLocal", "engine"]
 {% endif -%}

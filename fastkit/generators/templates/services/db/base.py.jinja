@@ -30,14 +30,12 @@ def get_db():
         db.close()
 
 {% elif db_choice == "mongodb" -%}
-# MongoDB doesn't use SQLAlchemy
-# Base configuration is handled in the MongoDB client
+# MongoDB doesn't use SQLAlchemy; SQL constructs are not applicable.
 Base = None
 SessionLocal = None
 engine = None
 
-
 def get_db():
-    """Placeholder for MongoDB - use the MongoDB client directly."""
-    raise NotImplementedError("Use MongoDB client for database operations")
+    """Not supported for MongoDB. Use get_mongo_db from app.db.session."""
+    raise NotImplementedError("Use get_mongo_db from app.db.session for MongoDB")
 {% endif -%}

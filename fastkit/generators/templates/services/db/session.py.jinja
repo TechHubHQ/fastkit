@@ -1,9 +1,7 @@
 """Database session management."""
 
 {% if db_choice in ["postgresql", "mysql", "sqlite", "mssql"] -%}
-from app.core.config import settings
 from .base import SessionLocal, engine, Base
-from sqlalchemy.orm import Session
 
 
 def create_tables():
@@ -11,64 +9,38 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 
-def get_session() -> Session:
-    """Get a new database session."""
-    return SessionLocal()
-
-
-class DatabaseManager:
-    """Database manager for handling connections and sessions."""
-
-    def __init__(self):
-        self.engine = engine
-        self.SessionLocal = SessionLocal
-
-    def create_tables(self):
-        """Create all tables."""
-        Base.metadata.create_all(bind=self.engine)
-
-    def drop_tables(self):
-        """Drop all tables."""
-        Base.metadata.drop_all(bind=self.engine)
-
-    def get_session(self) -> Session:
-        """Get a new session."""
-        return self.SessionLocal()
-
-
-# Global database manager instance
-db_manager = DatabaseManager()
+def drop_tables():
+    """Drop all database tables."""
+    Base.metadata.drop_all(bind=engine)
 
 {% elif db_choice == "mongodb" -%}
+from typing import AsyncIterator
 from app.core.config import settings
 from motor.motor_asyncio import AsyncIOMotorClient
 
-
-class MongoDBManager:
-    """MongoDB manager for handling connections."""
-
-    def __init__(self):
-        self.client = None
-        self.database = None
-
-    async def connect(self):
-        """Connect to MongoDB."""
-        self.client = AsyncIOMotorClient(settings.DATABASE_URL)
-        # Extract database name from URL or use default
-        db_name = settings.DATABASE_URL.split(
-            '/')[-1] or "{{ project_name.replace('-', '_') }}"
-        self.database = self.client[db_name]
-
-    async def disconnect(self):
-        """Disconnect from MongoDB."""
-        if self.client:
-            self.client.close()
-
-    def get_collection(self, collection_name: str):
-        """Get a collection."""
-        return self.database[collection_name]
+_mongo_client: AsyncIOMotorClient | None = None
+_mongo_db = None
 
 
-# Global MongoDB manager instance
-db_manager = MongoDBManager()
+async def connect_to_mongo() -> None:
+    global _mongo_client, _mongo_db
+    if _mongo_client is None:
+        _mongo_client = AsyncIOMotorClient(settings.DATABASE_URL)
+        db_name = settings.DATABASE_URL.split('/')[-1] or "{{ project_name.replace('-', '_') }}"
+        _mongo_db = _mongo_client[db_name]
+
+
+async def close_mongo_connection() -> None:
+    global _mongo_client
+    if _mongo_client is not None:
+        _mongo_client.close()
+        _mongo_client = None
+
+
+async def get_mongo_db() -> AsyncIterator:
+    """FastAPI DI dependency yielding the Mongo database handle."""
+    # Ensure connected
+    if _mongo_client is None:
+        await connect_to_mongo()
+    yield _mongo_db
 {% endif -%}

@@ -2,12 +2,34 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+{% if db_choice == "mongodb" -%}
+from contextlib import asynccontextmanager
+from app.db import connect_to_mongo, close_mongo_connection
+{% endif -%}
 
 from app.core.config import settings
 from app.api.v1.api import api_router
 from app.shared.middleware.error_handler import add_exception_handlers
 from app.shared.middleware.logging import LoggingMiddleware
 
+{% if db_choice == "mongodb" -%}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await connect_to_mongo()
+    yield
+    await close_mongo_connection()
+
+# Create FastAPI application with lifespan for MongoDB
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="{{ project_name }} API",
+    version=settings.VERSION,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENVIRONMENT != "production" else None,
+    docs_url=f"{settings.API_V1_STR}/docs" if settings.ENVIRONMENT != "production" else None,
+    redoc_url=f"{settings.API_V1_STR}/redoc" if settings.ENVIRONMENT != "production" else None,
+    lifespan=lifespan,
+)
+{% else -%}
 # Create FastAPI application
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -17,6 +39,7 @@ app = FastAPI(
     docs_url=f"{settings.API_V1_STR}/docs" if settings.ENVIRONMENT != "production" else None,
     redoc_url=f"{settings.API_V1_STR}/redoc" if settings.ENVIRONMENT != "production" else None,
 )
+{% endif -%}
 
 # Add CORS middleware
 app.add_middleware(

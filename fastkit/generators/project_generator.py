@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Literal
 from jinja2 import Environment, FileSystemLoader
 from .dependency_manager import get_dependency_manager
-from .db_generator import generate_database_setup, update_database_configuration, ensure_database_imports_in_main
+from .db_generator import generate_database_setup, update_database_configuration
 from .cache_generator import generate_cache_setup, update_cache_configuration, ensure_cache_imports_in_main
 from .auth_generator import generate_auth_setup, update_auth_configuration, ensure_auth_imports_in_main, generate_auth_dependencies
 from .utils import ensure_dir, render_and_write
@@ -179,9 +179,6 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
 
         # Update configuration files
         update_database_configuration(base_path, db_choice, project_name)
-
-        # Ensure proper imports in main.py
-        ensure_database_imports_in_main(base_path, db_choice)
 
     # Auth directory - use unified auth generation
     if auth_type != "none":
@@ -469,9 +466,6 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
 
         # Update configuration files
         update_database_configuration(service_path, db_choice, service_name)
-
-        # Ensure proper imports in main.py
-        ensure_database_imports_in_main(service_path, db_choice)
 
     if cache_choice != "none":
         # Use the unified cache generator to ensure consistency
