@@ -364,22 +364,6 @@ def create_project(
     console.print(Align.center(welcome_text))
     console.print()
 
-    # Show a quick feature overview
-    features_panel = Panel(
-        "✨ [bold]What you'll get:[/bold]\n"
-        "• Modern FastAPI project structure\n"
-        "• Production-ready configurations\n"
-        "• Database & cache integrations\n"
-        "• Authentication setup\n"
-        "• Docker & CI/CD ready\n"
-        "• Clean architecture patterns",
-        title="[bold bright_green]🎯 Features[/bold bright_green]",
-        border_style="bright_green",
-        padding=(1, 2)
-    )
-    console.print(Align.center(features_panel))
-    console.print()
-
     if not project_name:
         project_name = typer.prompt(
             "Project name", default="my-fastapi-app").strip()
