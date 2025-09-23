@@ -1,0 +1,89 @@
+"""{{ domain_name.title() }} domain repository."""
+
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from bson import ObjectId
+from typing import List, Optional
+from datetime import datetime
+from .models import {{ domain_name.title() }}
+from .schemas import {{ domain_name.title() }}Create, {{ domain_name.title() }}Update
+
+
+class {{ domain_name.title() }}Repository:
+    """Repository for {{ domain_name.lower() }} data access."""
+
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self.db = db
+        self.collection = db.{{ domain_name.lower() }}s
+
+    async def get(self, {{ domain_name.lower() }}_id: str) -> Optional[{{ domain_name.title() }}]:
+        """Get a {{ domain_name.lower() }} by ID."""
+        try:
+            document = await self.collection.find_one({"_id": ObjectId({{ domain_name.lower() }}_id)})
+            return {{ domain_name.title() }}.from_dict(document) if document else None
+        except Exception:
+            return None
+
+    async def get_by_name(self, name: str) -> Optional[{{ domain_name.title() }}]:
+        """Get a {{ domain_name.lower() }} by name."""
+        document = await self.collection.find_one({"name": name})
+        return {{ domain_name.title() }}.from_dict(document) if document else None
+
+    async def get_all(self, skip: int = 0, limit: int = 100, active_only: bool = True) -> List[{{ domain_name.title() }}]:
+        """Get all {{ domain_name.lower() }}s with pagination."""
+        filter_query = {"is_active": True} if active_only else {}
+
+        cursor = self.collection.find(filter_query).skip(skip).limit(limit)
+        documents = await cursor.to_list(length=limit)
+
+        return [{{ domain_name.title() }}.from_dict(doc) for doc in documents]
+
+    async def create(self, {{ domain_name.lower() }}_data: {{ domain_name.title() }}Create) -> {{ domain_name.title() }}:
+        """Create a new {{ domain_name.lower() }}."""
+        {{ domain_name.lower() }} = {{ domain_name.title() }}(**{{ domain_name.lower() }}_data.model_dump())
+        document = {{ domain_name.lower() }}.to_dict()
+
+        result = await self.collection.insert_one(document)
+        document["_id"] = str(result.inserted_id)
+
+        return {{ domain_name.title() }}.from_dict(document)
+
+    async def update(self, {{ domain_name.lower() }}_id: str, {{ domain_name.lower() }}_data: {{ domain_name.title() }}Update) -> Optional[{{ domain_name.title() }}]:
+        """Update a {{ domain_name.lower() }}."""
+        try:
+            update_data = {{ domain_name.lower() }}_data.model_dump(exclude_unset=True)
+            if update_data:
+                update_data["updated_at"] = datetime.utcnow()
+
+                result = await self.collection.update_one(
+                    {"_id": ObjectId({{ domain_name.lower() }}_id)},
+                    {"$set": update_data}
+                )
+
+                if result.modified_count > 0:
+                    return await self.get({{ domain_name.lower() }}_id)
+
+            return None
+        except Exception:
+            return None
+
+    async def delete(self, {{ domain_name.lower() }}_id: str) -> bool:
+        """Delete a {{ domain_name.lower() }}."""
+        try:
+            result = await self.collection.delete_one({"_id": ObjectId({{ domain_name.lower() }}_id)})
+            return result.deleted_count > 0
+        except Exception:
+            return False
+
+    async def count(self, active_only: bool = True) -> int:
+        """Count {{ domain_name.lower() }}s."""
+        filter_query = {"is_active": True} if active_only else {}
+        return await self.collection.count_documents(filter_query)
+
+    async def exists_by_name(self, name: str, exclude_id: Optional[str] = None) -> bool:
+        """Check if a {{ domain_name.lower() }} with the given name exists."""
+        filter_query = {"name": name}
+        if exclude_id:
+            filter_query["_id"] = {"$ne": ObjectId(exclude_id)}
+
+        count = await self.collection.count_documents(filter_query)
+        return count > 0

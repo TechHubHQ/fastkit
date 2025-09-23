@@ -1,0 +1,19 @@
+"""{{ domain_name.title() }} domain dependencies."""
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.db.base import get_db
+from .repositories import {{ domain_name.title() }}Repository
+from .services import {{ domain_name.title() }}Service
+
+
+def get_{{ domain_name.lower() }}_repository(db: Session = Depends(get_db)) -> {{ domain_name.title() }}Repository:
+    """Get {{ domain_name.lower() }} repository."""
+    return {{ domain_name.title() }}Repository(db)
+
+
+def get_{{ domain_name.lower() }}_service(
+    repository: {{ domain_name.title() }}Repository = Depends(get_{{ domain_name.lower() }}_repository)
+) -> {{ domain_name.title() }}Service:
+    """Get {{ domain_name.lower() }} service."""
+    return {{ domain_name.title() }}Service(repository)

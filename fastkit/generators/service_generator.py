@@ -10,6 +10,7 @@ from .dependency_manager import get_dependency_manager
 from .db_generator import generate_database_setup, update_database_configuration
 from .cache_generator import generate_cache_setup, update_cache_configuration, ensure_cache_imports_in_main
 from .auth_generator import generate_auth_setup, update_auth_configuration, ensure_auth_imports_in_main, generate_auth_dependencies
+from .cleanup_utils import cleanup_dependencies_from_pyproject
 
 
 def add_service_to_project(
@@ -40,6 +41,9 @@ def add_service_to_project(
     # Update configuration files
     _update_config_files(project_path, project_config)
 
+    # Clean up old dependencies and sync new ones
+    cleanup_dependencies_from_pyproject(project_path, service_type)
+    
     # Sync dependencies using dependency manager
     dep_manager = get_dependency_manager(project_path)
     dep_manager.sync_service_dependencies(service_type, service_provider)
@@ -135,7 +139,8 @@ def _create_service_files(
             project_path,
             service_provider,
             config["project_name"],
-            template_env=env
+            template_env=env,
+            clean_existing=True  # Clean up existing cache setup when adding new service
         )
 
         # Update configuration files
@@ -151,7 +156,8 @@ def _create_service_files(
             project_path,
             service_provider,
             config["project_name"],
-            template_env=env
+            template_env=env,
+            clean_existing=True  # Clean up existing database setup when adding new service
         )
 
         # Update configuration files
@@ -164,7 +170,8 @@ def _create_service_files(
             project_path,
             service_provider,
             config["project_name"],
-            template_env=env
+            template_env=env,
+            clean_existing=True  # Clean up existing auth setup when adding new service
         )
 
         # Update configuration files
@@ -264,7 +271,7 @@ def _generate_db_config(config: Dict[str, Any]) -> str:
 
     db_configs = {
         "postgresql": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/{project_name.replace("-", "_")}_db")',
-        "mysql": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql://user:password@localhost/{project_name.replace("-", "_")}_db")',
+        "mysql": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://user:password@localhost/{project_name.replace("-", "_")}_db")',
         "sqlite": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./{project_name.replace("-", "_")}.db")',
         "mongodb": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "mongodb://localhost:27017/{project_name.replace("-", "_")}_db")',
         "mssql": f'    DATABASE_URL: str = os.getenv("DATABASE_URL", "mssql://user:password@localhost/{project_name.replace("-", "_")}_db")'

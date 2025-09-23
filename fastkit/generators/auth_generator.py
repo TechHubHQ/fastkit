@@ -5,13 +5,15 @@ from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
 
 from .utils import ensure_dir, render_and_write
+from .cleanup_utils import cleanup_auth_files, cleanup_auth_config, cleanup_auth_imports, cleanup_auth_dependencies
 
 
 def generate_auth_setup(
     project_path: Path,
     auth_type: str,
     project_name: str,
-    template_env: Environment = None
+    template_env: Environment = None,
+    clean_existing: bool = True
 ) -> None:
     """Generate unified auth setup files.
 
@@ -23,7 +25,15 @@ def generate_auth_setup(
         auth_type: Auth type (jwt, oauth, none)
         project_name: Name of the project
         template_env: Optional Jinja2 environment (will create if not provided)
+        clean_existing: Whether to clean up existing auth files before generating new ones
     """
+    # Clean up existing auth setup if requested
+    if clean_existing:
+        cleanup_auth_files(project_path)
+        cleanup_auth_config(project_path)
+        cleanup_auth_imports(project_path)
+        cleanup_auth_dependencies(project_path)
+    
     if auth_type == "none":
         return
 

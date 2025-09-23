@@ -1,0 +1,76 @@
+"""{{ domain_name.title() }} domain schemas."""
+
+from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Optional, Union
+
+
+class {{ domain_name.title() }}Base(BaseModel):
+    """Base {{ domain_name.lower() }} schema."""
+
+    name: str = Field(..., description="Name of the {{ domain_name.lower() }}")
+    description: Optional[str] = Field(None, description="Description of the {{ domain_name.lower() }}")
+    is_active: bool = Field(True, description="Whether the {{ domain_name.lower() }} is active")
+
+
+class {{ domain_name.title() }}Create({{ domain_name.title() }}Base):
+    """Schema for creating a {{ domain_name.lower() }}."""
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Sample {{ domain_name.title() }}",
+                "description": "A sample {{ domain_name.lower() }}",
+                "is_active": True
+            }
+        }
+
+
+class {{ domain_name.title() }}Update(BaseModel):
+    """Schema for updating a {{ domain_name.lower() }}."""
+
+    name: Optional[str] = Field(None, description="Name of the {{ domain_name.lower() }}")
+    description: Optional[str] = Field(None, description="Description of the {{ domain_name.lower() }}")
+    is_active: Optional[bool] = Field(None, description="Whether the {{ domain_name.lower() }} is active")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Updated {{ domain_name.title() }}",
+                "description": "An updated {{ domain_name.lower() }}",
+                "is_active": True
+            }
+        }
+
+
+class {{ domain_name.title() }}Response({{ domain_name.title() }}Base):
+    """Schema for {{ domain_name.lower() }} response."""
+
+    id: Union[int, str] = Field(..., description="Unique identifier")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": "507f1f77bcf86cd799439011",
+                "name": "Sample {{ domain_name.title() }}",
+                "description": "A sample {{ domain_name.lower() }}",
+                "is_active": True,
+                "created_at": "2023-01-01T00:00:00Z",
+                "updated_at": "2023-01-01T00:00:00Z"
+            }
+        }
+
+    @classmethod
+    def from_model(cls, model) -> "{{ domain_name.title() }}Response":
+        """Create response schema from model instance."""
+        return cls(
+            id=model.id,
+            name=model.name,
+            description=model.description,
+            is_active=model.is_active,
+            created_at=model.created_at,
+            updated_at=model.updated_at
+        )

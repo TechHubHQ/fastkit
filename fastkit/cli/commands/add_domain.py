@@ -5,6 +5,10 @@ import typer
 from pathlib import Path
 from typing import Optional
 from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from rich.align import Align
 
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
 from fastkit.shared.service_help import display_domain_help, create_domain_examples_panel, create_domain_structure_panel
@@ -78,8 +82,29 @@ def add_domain(
     console.clear()
     print_ascii_msg()
 
-    console.print(
-        f"[bold bright_cyan]Adding domain '{domain_name}' to your project[/bold bright_cyan]\n")
+    # Welcome message
+    welcome_text = Text()
+    welcome_text.append("🏢 Adding Domain: ", style="bold bright_cyan")
+    welcome_text.append(f"'{domain_name}'", style="bold bright_green")
+    welcome_text.append(" to your FastAPI project", style="bright_white")
+
+    console.print(Align.center(welcome_text))
+    console.print()
+
+    # Show domain info
+    domain_info_panel = Panel(
+        f"🏢 [bold]Domain Overview:[/bold]\n"
+        f"• [cyan]Clean Architecture[/cyan] - Separation of concerns\n"
+        f"• [cyan]Auto-generated Files[/cyan] - Models, schemas, services, routes\n"
+        f"• [cyan]API Integration[/cyan] - Available at /api/v1/{domain_name}s\n"
+        f"• [cyan]Test Coverage[/cyan] - Optional test files included\n"
+        f"• [cyan]Database Agnostic[/cyan] - Works with SQL and NoSQL",
+        title="[bold bright_green]✨ Domain Features[/bold bright_green]",
+        border_style="bright_green",
+        padding=(1, 2)
+    )
+    console.print(domain_info_panel)
+    console.print()
 
     # Determine project path
     if path is None:
@@ -115,11 +140,48 @@ def add_domain(
             console.print("Aborting.")
             raise typer.Exit(code=1)
 
-    # Show summary
-    console.print("[bold]Summary[/bold]")
-    console.print(f"  Domain:      [cyan]{domain_name}[/cyan]")
-    console.print(f"  Project:     [cyan]{project_path}[/cyan]")
-    console.print(f"  With tests:  [cyan]{with_tests}[/cyan]")
+    # Beautiful summary with card-style layout
+    console.print(
+        "[bold bright_cyan]📋 Domain Configuration[/bold bright_cyan]")
+    console.print()
+
+    # Create elegant summary content
+    summary_content = Text()
+
+    summary_content.append("🏷️  ", style="bright_green")
+    summary_content.append("Domain: ", style="bold white")
+    summary_content.append(f"{domain_name}", style="bright_green")
+    summary_content.append("\n")
+
+    summary_content.append("📁  ", style="bright_blue")
+    summary_content.append("Project: ", style="bold white")
+    summary_content.append(f"{project_path.name}", style="bright_blue")
+    summary_content.append("\n")
+
+    summary_content.append("🧪  ", style="bright_yellow")
+    summary_content.append("Tests: ", style="bold white")
+    test_status = "Included" if with_tests else "Skipped"
+    summary_content.append(
+        f"{test_status}", style="bright_yellow" if with_tests else "dim")
+    summary_content.append("\n")
+
+    summary_content.append("🔗  ", style="bright_cyan")
+    summary_content.append("API Route: ", style="bold white")
+    summary_content.append(f"/api/v1/{domain_name}s", style="bright_cyan")
+    summary_content.append("\n\n")
+
+    summary_content.append("📝  ", style="bright_magenta")
+    summary_content.append("Generated Files: ", style="bold white")
+    summary_content.append(
+        "models, schemas, services, routes, repositories", style="bright_magenta")
+
+    summary_panel = Panel(
+        summary_content,
+        title="[bold bright_green]✨ Domain Summary[/bold bright_green]",
+        border_style="bright_green",
+        padding=(1, 2)
+    )
+    console.print(summary_panel)
     console.print()
 
     proceed = typer.confirm("Proceed to create the domain?", default=True)
@@ -138,27 +200,35 @@ def add_domain(
             force=force
         )
 
-        console.print(
-            f"\n[bold bright_green]Domain '{domain_name}' created successfully![/bold bright_green]")
-        console.print(
-            "[dim]✓ Domain files created[/dim]")
-        console.print(
-            "[dim]✓ Dependencies synced to pyproject.toml[/dim]")
-        console.print(
-            f"\nDomain files created in: [underline]{domains_path}[/underline]")
-        console.print("\n[bold]Next steps:[/bold]")
-        console.print(
-            f"1. Edit [cyan]app/domains/{domain_name}/models.py[/cyan] to define your database models")
-        console.print(
-            f"2. Update [cyan]app/domains/{domain_name}/schemas.py[/cyan] with your API schemas")
-        console.print(
-            f"3. Implement business logic in [cyan]app/domains/{domain_name}/services.py[/cyan]")
-        console.print(
-            f"4. The domain routes are automatically available at [cyan]/api/v1/{domain_name}s[/cyan]")
+        # Success message with next steps
+        console.print()
+        success_panel = Panel(
+            f"🎉 [bold bright_green]Success![/bold bright_green] Domain '{domain_name}' has been created.\n\n"
+            f"📁 [bold]Domain Location:[/bold] [cyan]{domains_path}[/cyan]\n\n"
+            f"🚀 [bold]Next Steps:[/bold]\n"
+            f"  1. [bright_blue]Edit models.py[/bright_blue] - Define your database models\n"
+            f"  2. [bright_blue]Update schemas.py[/bright_blue] - Configure API schemas\n"
+            f"  3. [bright_blue]Implement services.py[/bright_blue] - Add business logic\n"
+            f"  4. [bright_blue]Test your API[/bright_blue] - Available at /api/v1/{domain_name}s\n"
+            + (f"  5. [bright_blue]Run tests[/bright_blue] - pytest tests/domains/test_{domain_name}/\n" if with_tests else "") +
+            f"\n📚 [bold]Files Created:[/bold]\n"
+            f"  • models.py, schemas.py, services.py\n"
+            f"  • repositories.py, routes.py, dependencies.py\n"
+            f"  • exceptions.py, __init__.py"
+            + ("\n  • Complete test suite" if with_tests else ""),
+            title="[bold bright_green]✨ Domain Created Successfully![/bold bright_green]",
+            border_style="bright_green",
+            padding=(1, 2)
+        )
+        console.print(success_panel)
 
-        if with_tests:
-            console.print(
-                f"5. Run tests with: [cyan]pytest tests/domains/test_{domain_name}/[/cyan]")
+        # Additional tips
+        console.print(
+            "[dim]💡 Tip: The domain follows clean architecture patterns with separation of concerns.[/dim]")
+        console.print(
+            "[dim]💡 Tip: All endpoints include full CRUD operations with proper error handling.[/dim]")
+        console.print(
+            "\n[bold bright_cyan]Happy domain building! 🏢[/bold bright_cyan]")
 
     except Exception as e:
         console.print(

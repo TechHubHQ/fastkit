@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 {% elif db_choice == "mysql" %}
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "mysql://user:password@localhost/{{ project_name }}_db"
+        "mysql+pymysql://user:password@localhost/{{ project_name }}_db"
     )
 {% elif db_choice == "mongodb" %}
     DATABASE_URL: str = os.getenv(

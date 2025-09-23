@@ -4,12 +4,226 @@ from pathlib import Path
 from typing import Optional
 from InquirerPy import inquirer
 from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from rich.align import Align
 
 from fastkit.shared.ui import print_ascii_msg, show_loading_animation
 from fastkit.generators.project_generator import scaffold_project_structure
+from fastkit.generators.cleanup_utils import cleanup_existing_project, is_fastkit_project
 
 
 console = Console()
+
+
+def _create_architecture_info_panel():
+    """Create a beautiful panel explaining architecture choices."""
+    arch_content = Text()
+
+    # REST API Service
+    arch_content.append("🏗️  ", style="bright_green")
+    arch_content.append("REST API Service", style="bold bright_green")
+    arch_content.append("\n   Perfect for: ", style="dim")
+    arch_content.append(
+        "Single service APIs, microservice components", style="white")
+    arch_content.append("\n   Features: ", style="dim")
+    arch_content.append(
+        "Clean domain structure, fast setup, production-ready\n\n", style="cyan")
+
+    # Fullstack Application
+    arch_content.append("🌐  ", style="bright_blue")
+    arch_content.append("Fullstack Application", style="bold bright_blue")
+    arch_content.append("\n   Perfect for: ", style="dim")
+    arch_content.append(
+        "Web applications with frontend and backend", style="white")
+    arch_content.append("\n   Features: ", style="dim")
+    arch_content.append(
+        "Backend + Frontend + Infrastructure setup\n\n", style="cyan")
+
+    # Microservices
+    arch_content.append("🔗  ", style="bright_magenta")
+    arch_content.append("Microservices Architecture",
+                        style="bold bright_magenta")
+    arch_content.append("\n   Perfect for: ", style="dim")
+    arch_content.append(
+        "Distributed systems, enterprise applications", style="white")
+    arch_content.append("\n   Features: ", style="dim")
+    arch_content.append(
+        "Multiple services, API gateway, service mesh\n\n", style="cyan")
+
+    return Panel(
+        arch_content,
+        title="[bold bright_cyan]🏛️  Choose Your Architecture[/bold bright_cyan]",
+        border_style="bright_cyan",
+        padding=(1, 2)
+    )
+
+
+def _create_database_info_panel():
+    """Create a beautiful panel explaining database choices."""
+    db_content = Text()
+
+    # PostgreSQL
+    db_content.append("🐘  ", style="bright_blue")
+    db_content.append("PostgreSQL", style="bold bright_blue")
+    db_content.append(" (SQL) ", style="dim")
+    db_content.append("⭐⭐⭐⭐⭐", style="yellow")
+    db_content.append("\n   Best for: ", style="dim")
+    db_content.append(
+        "Production applications, complex queries, ACID compliance", style="white")
+    db_content.append("\n   Why choose: ", style="dim")
+    db_content.append(
+        "Industry standard, excellent performance, rich features\n\n", style="cyan")
+
+    # MySQL
+    db_content.append("🐬  ", style="bright_green")
+    db_content.append("MySQL", style="bold bright_green")
+    db_content.append(" (SQL) ", style="dim")
+    db_content.append("⭐⭐⭐⭐", style="yellow")
+    db_content.append("\n   Best for: ", style="dim")
+    db_content.append(
+        "Web applications, high compatibility, shared hosting", style="white")
+    db_content.append("\n   Why choose: ", style="dim")
+    db_content.append(
+        "Widely supported, fast reads, easy to deploy\n\n", style="cyan")
+
+    # SQLite
+    db_content.append("📁  ", style="bright_yellow")
+    db_content.append("SQLite", style="bold bright_yellow")
+    db_content.append(" (SQL) ", style="dim")
+    db_content.append("⭐⭐⭐", style="yellow")
+    db_content.append("\n   Best for: ", style="dim")
+    db_content.append(
+        "Development, prototyping, small applications", style="white")
+    db_content.append("\n   Why choose: ", style="dim")
+    db_content.append(
+        "Zero configuration, file-based, perfect for testing\n\n", style="cyan")
+
+    # MongoDB
+    db_content.append("🍃  ", style="bright_green")
+    db_content.append("MongoDB", style="bold bright_green")
+    db_content.append(" (NoSQL) ", style="dim")
+    db_content.append("⭐⭐⭐⭐", style="yellow")
+    db_content.append("\n   Best for: ", style="dim")
+    db_content.append(
+        "Document storage, flexible schemas, rapid development", style="white")
+    db_content.append("\n   Why choose: ", style="dim")
+    db_content.append(
+        "Schema flexibility, horizontal scaling, JSON-like documents", style="cyan")
+
+    return Panel(
+        db_content,
+        title="[bold bright_blue]🗄️  Database Options[/bold bright_blue]",
+        border_style="bright_blue",
+        padding=(1, 2)
+    )
+
+
+def _create_cache_info_panel():
+    """Create a beautiful panel explaining cache choices."""
+    cache_content = Text()
+
+    # Redis
+    cache_content.append("🔴  ", style="bright_red")
+    cache_content.append("Redis", style="bold bright_red")
+    cache_content.append(" (In-Memory) ", style="dim")
+    cache_content.append("🚀🚀🚀", style="yellow")
+    cache_content.append("\n   Best for: ", style="dim")
+    cache_content.append(
+        "High-performance caching, pub/sub, session storage", style="white")
+    cache_content.append("\n   Why choose: ", style="dim")
+    cache_content.append(
+        "Lightning fast, rich data types, persistence options\n\n", style="cyan")
+
+    # Memcached
+    cache_content.append("💾  ", style="bright_blue")
+    cache_content.append("Memcached", style="bold bright_blue")
+    cache_content.append(" (Distributed) ", style="dim")
+    cache_content.append("🚀🚀", style="yellow")
+    cache_content.append("\n   Best for: ", style="dim")
+    cache_content.append(
+        "Simple caching, horizontal scaling, memory efficiency", style="white")
+    cache_content.append("\n   Why choose: ", style="dim")
+    cache_content.append(
+        "Simple setup, excellent for basic caching needs\n\n", style="cyan")
+
+    # DynamoDB
+    cache_content.append("🟦  ", style="bright_cyan")
+    cache_content.append("DynamoDB", style="bold bright_cyan")
+    cache_content.append(" (Cloud NoSQL) ", style="dim")
+    cache_content.append("🚀🚀", style="yellow")
+    cache_content.append("\n   Best for: ", style="dim")
+    cache_content.append(
+        "Serverless caching, scalable cloud apps, AWS integration", style="white")
+    cache_content.append("\n   Why choose: ", style="dim")
+    cache_content.append(
+        "Fully managed, seamless AWS integration, auto-scaling\n\n", style="cyan")
+
+    # In-Memory
+    cache_content.append("🧠  ", style="bright_green")
+    cache_content.append("In-Memory", style="bold bright_green")
+    cache_content.append(" (Local) ", style="dim")
+    cache_content.append("🚀", style="yellow")
+    cache_content.append("\n   Best for: ", style="dim")
+    cache_content.append(
+        "Development, testing, single-instance applications", style="white")
+    cache_content.append("\n   Why choose: ", style="dim")
+    cache_content.append(
+        "Zero external dependencies, perfect for development", style="cyan")
+
+    return Panel(
+        cache_content,
+        title="[bold bright_magenta]⚡ Cache Options[/bold bright_magenta]",
+        border_style="bright_magenta",
+        padding=(1, 2)
+    )
+
+
+def _create_auth_info_panel():
+    """Create a beautiful panel explaining auth choices."""
+    auth_content = Text()
+
+    # JWT
+    auth_content.append("🎫  ", style="bright_blue")
+    auth_content.append("JWT (JSON Web Tokens)", style="bold bright_blue")
+    auth_content.append(" ", style="dim")
+    auth_content.append("🔒🔒🔒", style="yellow")
+    auth_content.append("\n   Best for: ", style="dim")
+    auth_content.append(
+        "REST APIs, stateless authentication, microservices", style="white")
+    auth_content.append("\n   Why choose: ", style="dim")
+    auth_content.append(
+        "Stateless, scalable, industry standard for APIs\n\n", style="cyan")
+
+    # OAuth 2.0
+    auth_content.append("🌐  ", style="bright_green")
+    auth_content.append("OAuth 2.0", style="bold bright_green")
+    auth_content.append(" ", style="dim")
+    auth_content.append("🔒🔒🔒🔒", style="yellow")
+    auth_content.append("\n   Best for: ", style="dim")
+    auth_content.append(
+        "Social login, third-party integrations, enterprise SSO", style="white")
+    auth_content.append("\n   Why choose: ", style="dim")
+    auth_content.append(
+        "Secure delegation, social providers, enterprise ready\n\n", style="cyan")
+
+    # None
+    auth_content.append("🔓  ", style="dim")
+    auth_content.append("No Authentication", style="bold dim")
+    auth_content.append("\n   Best for: ", style="dim")
+    auth_content.append(
+        "Public APIs, development, open data services", style="white")
+    auth_content.append("\n   Why choose: ", style="dim")
+    auth_content.append(
+        "Simple setup, no user management complexity", style="cyan")
+
+    return Panel(
+        auth_content,
+        title="[bold bright_red]🔐 Authentication Options[/bold bright_red]",
+        border_style="bright_red",
+        padding=(1, 2)
+    )
 
 
 def _prompt_with_choices(prompt_text: str, choices: list[str], default: str | None = None) -> str:
@@ -62,7 +276,6 @@ def _normalize_architecture_choice(architecture: str) -> str:
         "fullstack application": "fullstack",
         "microservices architecture": "microservices",
         "rest api service": "rest-apis",
-        "onion architecture": "onion-architecture",
     }
     return mapping.get(architecture.lower(), architecture.lower())
 
@@ -101,32 +314,6 @@ def _get_microservices_config() -> dict:
     }
 
 
-def _get_onion_architecture_config() -> dict:
-    """Get onion architecture-specific configuration from user."""
-    console.print("\n[bold]Onion Architecture Configuration[/bold]")
-
-    # Ask about domain complexity
-    domain_entities = typer.prompt(
-        "Enter main domain entities (comma-separated)",
-        default="User,Product"
-    ).strip()
-
-    entities = [entity.strip()
-                for entity in domain_entities.split(",") if entity.strip()]
-
-    # Ask about use cases
-    include_cqrs = typer.confirm(
-        "Include CQRS pattern (Command/Query separation)?",
-        default=False
-    )
-
-    return {
-        "entities": entities,
-        "include_cqrs": include_cqrs,
-        "include_di": True  # Always include dependency injection
-    }
-
-
 def create_project(
     project_name: Optional[str] = typer.Argument(
         None,
@@ -150,7 +337,6 @@ def create_project(
         • REST API Service     - Single service with clean domain structure
         • Fullstack App        - Backend + Frontend + Infrastructure
         • Microservices        - Multiple services with API gateway
-        • Onion Architecture   - Domain-driven design with clean architecture
 
     🔧 INTEGRATIONS:
         • Database: PostgreSQL, MySQL, SQLite, MongoDB, SQL Server
@@ -167,8 +353,31 @@ def create_project(
     console.clear()
     print_ascii_msg()
 
-    console.print(
-        "[bold bright_cyan]Let's set up your FastAPI project structure[/bold bright_cyan]\n")
+    # Welcome message with beautiful styling
+    welcome_text = Text()
+    welcome_text.append(
+        "🚀 Welcome to FastKit Project Creator! ", style="bold bright_cyan")
+    welcome_text.append(
+        "Let's build something amazing together.", style="bright_white")
+
+    console.print(Align.center(welcome_text))
+    console.print()
+
+    # Show a quick feature overview
+    features_panel = Panel(
+        "✨ [bold]What you'll get:[/bold]\n"
+        "• Modern FastAPI project structure\n"
+        "• Production-ready configurations\n"
+        "• Database & cache integrations\n"
+        "• Authentication setup\n"
+        "• Docker & CI/CD ready\n"
+        "• Clean architecture patterns",
+        title="[bold bright_green]🎯 Features[/bold bright_green]",
+        border_style="bright_green",
+        padding=(1, 2)
+    )
+    console.print(Align.center(features_panel))
+    console.print()
 
     if not project_name:
         project_name = typer.prompt(
@@ -186,82 +395,226 @@ def create_project(
     target_dir = base_path / project_name
 
     if target_dir.exists() and any(target_dir.iterdir()):
-        overwrite = typer.confirm(
-            f"Directory '{target_dir}' already exists and is not empty. Continue?", default=False)
+        # Check if it's a FastKit project
+        is_fastkit = is_fastkit_project(target_dir)
+        
+        if is_fastkit:
+            console.print(f"[yellow]⚠️  FastKit project detected in '{target_dir}'[/yellow]")
+            overwrite = typer.confirm(
+                "This will completely replace the existing FastKit project with a new one. All current files will be removed. Continue?", 
+                default=False
+            )
+        else:
+            console.print(f"[yellow]⚠️  Directory '{target_dir}' is not empty[/yellow]")
+            overwrite = typer.confirm(
+                "This will clean up the directory and create a new FastKit project. Continue?", 
+                default=False
+            )
+        
         if not overwrite:
             typer.echo("Aborting.")
             raise typer.Exit(code=1)
+        else:
+            # Clean up the existing project directory
+            if is_fastkit:
+                console.print("[yellow]🧹 Cleaning up existing FastKit project...[/yellow]")
+            else:
+                console.print("[yellow]🧹 Cleaning up directory...[/yellow]")
+            
+            cleanup_existing_project(target_dir)
+            console.print("[green]✓ Cleanup completed[/green]")
+            console.print()
+
+    # Show architecture guide
+    console.print(
+        "[bold bright_cyan]🏠 Step 1: Choose Your Architecture[/bold bright_cyan]")
+    console.print()
+    arch_panel = _create_architecture_info_panel()
+    console.print(arch_panel)
+    console.print()
 
     architecture = _normalize_architecture_choice(
         _prompt_with_choices(
-            "Select project architecture",
+            "🏛️ Select project architecture",
             [
-                "Fullstack Application",
-                "Microservices Architecture",
                 "REST API Service",
-                "Onion Architecture"
+                "Fullstack Application",
+                "Microservices Architecture"
             ],
             default="REST API Service",
         )
     )
+    console.print(f"[dim]✓ Selected: {architecture}[/dim]")
+    console.print()
+
+    # Authentication setup
+    console.print(
+        "[bold bright_red]🔐 Step 2: Authentication Setup[/bold bright_red]")
+    console.print()
+    auth_panel = _create_auth_info_panel()
+    console.print(auth_panel)
+    console.print()
 
     needs_auth = typer.confirm(
-        "Do you want to include authentication setup?", default=False)
+        "🔒 Do you want to include authentication?", default=False)
     auth_type = "none"
     if needs_auth:
-        auth_type = _prompt_with_choices("Choose authentication type", [
+        auth_type = _prompt_with_choices("🔐 Choose authentication type", [
                                          "jwt", "oauth"], default="jwt")
+        console.print(f"[dim]✓ Selected: {auth_type}[/dim]")
+    else:
+        console.print("[dim]✓ No authentication selected[/dim]")
+    console.print()
 
-    needs_integrations = typer.confirm(
-        "Do you need any external services (DB, cache)?", default=False)
+    # Database setup
+    console.print(
+        "[bold bright_blue]🗄️ Step 3: Database Integration[/bold bright_blue]")
+    console.print()
+    db_panel = _create_database_info_panel()
+    console.print(db_panel)
+    console.print()
 
     db_choice = "none"
-    if needs_integrations and typer.confirm("Add a database integration?", default=False):
+    if typer.confirm("🗄️ Add a database integration?", default=True):
         db_choice = _normalize_db_choice(
             _prompt_with_choices(
-                "Choose a database",
+                "🗄️ Choose a database",
                 ["postgresql", "sqlite", "mysql", "mongodb", "none"],
                 default="sqlite",
             )
         )
+        console.print(f"[dim]✓ Selected: {db_choice}[/dim]")
+    else:
+        console.print("[dim]✓ No database selected[/dim]")
+    console.print()
+
+    # Cache setup
+    console.print(
+        "[bold bright_magenta]⚡ Step 4: Cache Integration[/bold bright_magenta]")
+    console.print()
+    cache_panel = _create_cache_info_panel()
+    console.print(cache_panel)
+    console.print()
 
     cache_choice = "none"
-    if needs_integrations and typer.confirm("Add a caching system?", default=False):
+    if typer.confirm("⚡ Add a caching system?", default=False):
         cache_choice = _normalize_cache_choice(
-            _prompt_with_choices("Choose a cache provider", [
+            _prompt_with_choices("⚡ Choose a cache provider", [
                                  "redis", "memcached", "dynamodb", "in-memory", "none"], default="redis")
         )
+        console.print(f"[dim]✓ Selected: {cache_choice}[/dim]")
+    else:
+        console.print("[dim]✓ No cache selected[/dim]")
+    console.print()
 
-    # Ask about CI/CD and Docker setup
+    # DevOps setup
+    console.print(
+        "[bold bright_yellow]🚀 Step 5: DevOps & Deployment[/bold bright_yellow]")
+    console.print()
+
+    devops_panel = Panel(
+        "🛠️ [bold]DevOps Features:[/bold]\n"
+        "• [cyan]CI/CD Pipelines[/cyan] - Automated testing & deployment\n"
+        "• [cyan]Docker Setup[/cyan] - Containerization for all environments\n"
+        "• [cyan]GitHub Actions[/cyan] - Automated workflows\n"
+        "• [cyan]Multi-stage builds[/cyan] - Optimized production images",
+        title="[bold bright_yellow]🚀 DevOps Options[/bold bright_yellow]",
+        border_style="bright_yellow",
+        padding=(1, 1)
+    )
+    console.print(devops_panel)
+    console.print()
+
     include_cicd = typer.confirm(
-        "Do you want to include CI/CD pipelines (GitHub Actions)?", default=True)
+        "🛠️ Include CI/CD pipelines (GitHub Actions)?", default=True)
+    console.print(f"[dim]✓ CI/CD: {'Yes' if include_cicd else 'No'}[/dim]")
 
     include_docker = typer.confirm(
-        "Do you want to include Docker setup?", default=True)
+        "🐳 Include Docker setup?", default=True)
+    console.print(f"[dim]✓ Docker: {'Yes' if include_docker else 'No'}[/dim]")
+    console.print()
 
     # Get architecture-specific configuration
     architecture_config = {}
     if architecture == "microservices":
         architecture_config = _get_microservices_config()
-    elif architecture == "onion_architecture":
-        architecture_config = _get_onion_architecture_config()
 
+    # Beautiful summary with card-style layout
+    console.print("[bold bright_cyan]📋 Final Configuration[/bold bright_cyan]")
     console.print()
-    console.print("[bold]Summary[/bold]")
-    console.print(f"  Project: [cyan]{project_name}[/cyan]")
-    console.print(f"  Architecture: [cyan]{architecture}[/cyan]")
-    console.print(f"  Auth:    [cyan]{auth_type}[/cyan]")
-    console.print(f"  DB:      [cyan]{db_choice}[/cyan]")
-    console.print(f"  Cache:   [cyan]{cache_choice}[/cyan]")
-    console.print(f"  CI/CD:   [cyan]{'Yes' if include_cicd else 'No'}[/cyan]")
-    console.print(
-        f"  Docker:  [cyan]{'Yes' if include_docker else 'No'}[/cyan]")
 
+    # Create elegant summary content
+    summary_content = Text()
+
+    # Project basics
+    summary_content.append("🏷️  ", style="bright_cyan")
+    summary_content.append("Project: ", style="bold white")
+    summary_content.append(f"{project_name}", style="bright_cyan")
+    summary_content.append("\n")
+
+    summary_content.append("🏛️  ", style="bright_cyan")
+    summary_content.append("Architecture: ", style="bold white")
+    summary_content.append(
+        f"{architecture.replace('-', ' ').title()}", style="bright_green")
+    summary_content.append("\n")
+
+    # Services
+    summary_content.append("🔐  ", style="bright_red")
+    summary_content.append("Authentication: ", style="bold white")
+    auth_display = auth_type.upper() if auth_type != 'none' else 'None'
+    summary_content.append(
+        f"{auth_display}", style="bright_red" if auth_type != 'none' else "dim")
+    summary_content.append("\n")
+
+    summary_content.append("🗄️  ", style="bright_blue")
+    summary_content.append("Database: ", style="bold white")
+    db_display = db_choice.title() if db_choice != 'none' else 'None'
+    summary_content.append(
+        f"{db_display}", style="bright_blue" if db_choice != 'none' else "dim")
+    summary_content.append("\n")
+
+    summary_content.append("⚡  ", style="bright_magenta")
+    summary_content.append("Cache: ", style="bold white")
+    cache_display = cache_choice.title() if cache_choice != 'none' else 'None'
+    summary_content.append(
+        f"{cache_display}", style="bright_magenta" if cache_choice != 'none' else "dim")
+    summary_content.append("\n")
+
+    # DevOps
+    summary_content.append("🛠️  ", style="bright_yellow")
+    summary_content.append("CI/CD: ", style="bold white")
+    summary_content.append("Enabled" if include_cicd else "Disabled",
+                           style="bright_yellow" if include_cicd else "dim")
+    summary_content.append("\n")
+
+    summary_content.append("🐳  ", style="bright_blue")
+    summary_content.append("Docker: ", style="bold white")
+    summary_content.append("Enabled" if include_docker else "Disabled",
+                           style="bright_blue" if include_docker else "dim")
+
+    # Architecture-specific config
     if architecture_config:
-        console.print(f"  Config:  [cyan]{architecture_config}[/cyan]")
+        summary_content.append(
+            "\n\n[bold]Architecture Configuration:[/bold]\n", style="bright_white")
+        if architecture == "microservices":
+            services_list = ", ".join(architecture_config.get("services", []))
+            summary_content.append("🔍  Services: ", style="bold white")
+            summary_content.append(f"{services_list}", style="bright_cyan")
+            summary_content.append("\n")
+            summary_content.append("🌐  Gateway: ", style="bold white")
+            gateway_status = 'Yes' if architecture_config.get(
+                "include_gateway") else 'No'
+            summary_content.append(
+                f"{gateway_status}", style="bright_green" if gateway_status == 'Yes' else "dim")
 
+    summary_panel = Panel(
+        summary_content,
+        title="[bold bright_green]✨ Your FastAPI Project Configuration[/bold bright_green]",
+        border_style="bright_green",
+        padding=(1, 2)
+    )
+    console.print(summary_panel)
     console.print()
-
     proceed = typer.confirm(
         "Proceed to create the directory structure?", default=True)
     if not proceed:
@@ -282,5 +635,33 @@ def create_project(
         include_docker=include_docker,
     )
 
-    console.print(
-        f"\n[bold bright_green]Project structure created at[/bold bright_green] [underline]{target_dir}[/underline]")
+    # Success message with next steps
+    console.print()
+    success_panel = Panel(
+        f"🎉 [bold bright_green]Success![/bold bright_green] Your FastAPI project has been created.\n\n"
+        f"📁 [bold]Project Location:[/bold] [cyan]{target_dir}[/cyan]\n\n"
+        f"🚀 [bold]Next Steps:[/bold]\n"
+        f"  1. [bright_blue]cd {project_name}[/bright_blue]\n"
+        f"  2. [bright_blue]uv sync[/bright_blue] (install dependencies)\n"
+        f"  3. [bright_blue]uv run fastapi dev app/main.py[/bright_blue] (start development server)\n\n"
+        f"📚 [bold]Documentation:[/bold] Check the generated README.md for detailed setup instructions",
+        title="[bold bright_green]✨ Project Created Successfully![/bold bright_green]",
+        border_style="bright_green",
+        padding=(1, 2)
+    )
+    console.print(success_panel)
+
+    # Additional tips based on selections
+    if db_choice != "none":
+        console.print(
+            f"[dim]💡 Tip: Don't forget to set up your {db_choice} database connection in the environment variables.[/dim]")
+
+    if cache_choice != "none":
+        console.print(
+            f"[dim]💡 Tip: Make sure your {cache_choice} server is running before starting the application.[/dim]")
+
+    if include_docker:
+        console.print(
+            "[dim]💡 Tip: Use 'docker-compose up' to start all services in containers.[/dim]")
+
+    console.print("\n[bold bright_cyan]Happy coding! 🚀[/bold bright_cyan]")

@@ -1,0 +1,95 @@
+"""{{ domain_name.title() }} domain service."""
+
+from typing import List, Optional
+from .repositories import {{ domain_name.title() }}Repository
+from .schemas import {{ domain_name.title() }}Create, {{ domain_name.title() }}Update, {{ domain_name.title() }}Response
+from .exceptions import {{ domain_name.title() }}NotFound, {{ domain_name.title() }}AlreadyExists
+
+
+class {{ domain_name.title() }}Service:
+    """Service for {{ domain_name.lower() }} business logic."""
+
+    def __init__(self, repository: {{ domain_name.title() }}Repository):
+        self.repository = repository
+
+    def get_{{ domain_name.lower() }}(self, {{ domain_name.lower() }}_id: int) -> {{ domain_name.title() }}Response:
+        """Get a {{ domain_name.lower() }} by ID."""
+        {{ domain_name.lower() }} = self.repository.get({{ domain_name.lower() }}_id)
+        if not {{ domain_name.lower() }}:
+            raise {{ domain_name.title() }}NotFound(f"{{ domain_name.title() }} with ID {{ '{' }}{{ domain_name.lower() }}_id{{ '}' }} not found")
+
+        return {{ domain_name.title() }}Response.from_model({{ domain_name.lower() }})
+
+    def get_{{ domain_name.lower() }}_by_name(self, name: str) -> {{ domain_name.title() }}Response:
+        """Get a {{ domain_name.lower() }} by name."""
+        {{ domain_name.lower() }} = self.repository.get_by_name(name)
+        if not {{ domain_name.lower() }}:
+            raise {{ domain_name.title() }}NotFound(f"{{ domain_name.title() }} with name '{name}' not found")
+
+        return {{ domain_name.title() }}Response.from_model({{ domain_name.lower() }})
+
+    def get_all_{{ domain_name.lower() }}s(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        active_only: bool = True
+    ) -> List[{{ domain_name.title() }}Response]:
+        """Get all {{ domain_name.lower() }}s with pagination."""
+        {{ domain_name.lower() }}s = self.repository.get_all(skip=skip, limit=limit, active_only=active_only)
+        return [{{ domain_name.title() }}Response.from_model({{ domain_name.lower() }}) for {{ domain_name.lower() }} in {{ domain_name.lower() }}s]
+
+    def create_{{ domain_name.lower() }}(self, {{ domain_name.lower() }}_data: {{ domain_name.title() }}Create) -> {{ domain_name.title() }}Response:
+        """Create a new {{ domain_name.lower() }}."""
+        # Check if {{ domain_name.lower() }} with same name already exists
+        existing = self.repository.get_by_name({{ domain_name.lower() }}_data.name)
+        if existing:
+            raise {{ domain_name.title() }}AlreadyExists(f"{{ domain_name.title() }} with name '{{ '{' }}{{ domain_name.lower() }}_data.name{{ '}' }}' already exists")
+
+        {{ domain_name.lower() }} = self.repository.create({{ domain_name.lower() }}_data)
+        return {{ domain_name.title() }}Response.from_model({{ domain_name.lower() }})
+
+    def update_{{ domain_name.lower() }}(
+        self,
+        {{ domain_name.lower() }}_id: int,
+        {{ domain_name.lower() }}_data: {{ domain_name.title() }}Update
+    ) -> {{ domain_name.title() }}Response:
+        """Update a {{ domain_name.lower() }}."""
+        # Check if {{ domain_name.lower() }} exists
+        existing = self.repository.get({{ domain_name.lower() }}_id)
+        if not existing:
+            raise {{ domain_name.title() }}NotFound(f"{{ domain_name.title() }} with ID {{ '{' }}{{ domain_name.lower() }}_id{{ '}' }} not found")
+
+        # Check if name is being updated and if it conflicts with another {{ domain_name.lower() }}
+        if {{ domain_name.lower() }}_data.name and {{ domain_name.lower() }}_data.name != existing.name:
+            name_conflict = self.repository.get_by_name({{ domain_name.lower() }}_data.name)
+            if name_conflict and name_conflict.id != {{ domain_name.lower() }}_id:
+                raise {{ domain_name.title() }}AlreadyExists(f"{{ domain_name.title() }} with name '{{ '{' }}{{ domain_name.lower() }}_data.name{{ '}' }}' already exists")
+
+        updated_{{ domain_name.lower() }} = self.repository.update({{ domain_name.lower() }}_id, {{ domain_name.lower() }}_data)
+        if not updated_{{ domain_name.lower() }}:
+            raise {{ domain_name.title() }}NotFound(f"Failed to update {{ domain_name.lower() }} with ID {{ '{' }}{{ domain_name.lower() }}_id{{ '}' }}")
+
+        return {{ domain_name.title() }}Response.from_model(updated_{{ domain_name.lower() }})
+
+    def delete_{{ domain_name.lower() }}(self, {{ domain_name.lower() }}_id: int) -> bool:
+        """Delete a {{ domain_name.lower() }}."""
+        # Check if {{ domain_name.lower() }} exists
+        existing = self.repository.get({{ domain_name.lower() }}_id)
+        if not existing:
+            raise {{ domain_name.title() }}NotFound(f"{{ domain_name.title() }} with ID {{ '{' }}{{ domain_name.lower() }}_id{{ '}' }} not found")
+
+        return self.repository.delete({{ domain_name.lower() }}_id)
+
+    def get_{{ domain_name.lower() }}s_count(self, active_only: bool = True) -> int:
+        """Get the count of {{ domain_name.lower() }}s."""
+        return self.repository.count(active_only=active_only)
+
+    def activate_{{ domain_name.lower() }}(self, {{ domain_name.lower() }}_id: int) -> {{ domain_name.title() }}Response:
+        """Activate a {{ domain_name.lower() }}."""
+        update_data = {{ domain_name.title() }}Update(is_active=True)
+        return self.update_{{ domain_name.lower() }}({{ domain_name.lower() }}_id, update_data)
+
+    def deactivate_{{ domain_name.lower() }}(self, {{ domain_name.lower() }}_id: int) -> {{ domain_name.title() }}Response:
+        """Deactivate a {{ domain_name.lower() }}."""
+        update_data = {{ domain_name.title() }}Update(is_active=False)
+        return self.update_{{ domain_name.lower() }}({{ domain_name.lower() }}_id, update_data)

@@ -1,0 +1,26 @@
+"""{{ domain_name.title() }} domain exceptions."""
+
+
+class {{ domain_name.title() }}Exception(Exception):
+    """Base exception for {{ domain_name.lower() }} domain."""
+    pass
+
+
+class {{ domain_name.title() }}NotFound({{ domain_name.title() }}Exception):
+    """Exception raised when a {{ domain_name.lower() }} is not found."""
+    pass
+
+
+class {{ domain_name.title() }}AlreadyExists({{ domain_name.title() }}Exception):
+    """Exception raised when trying to create a {{ domain_name.lower() }} that already exists."""
+    pass
+
+
+class {{ domain_name.title() }}ValidationError({{ domain_name.title() }}Exception):
+    """Exception raised when {{ domain_name.lower() }} data validation fails."""
+    pass
+
+
+class {{ domain_name.title() }}OperationError({{ domain_name.title() }}Exception):
+    """Exception raised when a {{ domain_name.lower() }} operation fails."""
+    pass

@@ -10,7 +10,7 @@ from .utils import ensure_dir, render_and_write
 
 AuthType = Literal["none", "jwt", "oauth"]
 ArchitectureType = Literal["fullstack",
-                           "microservices", "rest-apis", "onion-architecture"]
+                           "microservices", "rest-apis"]
 DbType = Literal["none", "postgresql", "sqlite", "mysql", "mongodb", "mssql"]
 CacheType = Literal["none", "redis", "memcached", "dynamodb", "in-memory"]
 LanguageType = Literal["typescript", "javascript"]
@@ -84,7 +84,7 @@ def _create_docker_setup(base_path: Path, context: dict, architecture: str) -> N
                           docker_dir / "Dockerfile.service", context)
 
     else:
-        # Create Dockerfile for single service (rest-apis, onion-architecture)
+        # Create Dockerfile for single service (rest-apis)
         _render_and_write("docker/Dockerfile.jinja",
                           base_path / "Dockerfile", context)
 
@@ -174,7 +174,8 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
             base_path,
             db_choice,
             project_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -187,7 +188,8 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
             base_path,
             auth_type,
             project_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -206,7 +208,8 @@ def _scaffold_domain_structure(base_path: Path, project_name: str, auth_type: Au
             base_path,
             cache_choice,
             project_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -298,98 +301,6 @@ def _scaffold_microservices(base_path: Path, project_name: str, auth_type: AuthT
                       {"services": services_list, "project_name": project_name})
 
 
-def _scaffold_onion_architecture(base_path: Path, project_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType, config: dict) -> None:
-    """Scaffold an onion architecture."""
-    src_root = base_path / "src"
-
-    # Create main layers
-    domain_dir = src_root / "domain"
-    application_dir = src_root / "application"
-    infrastructure_dir = src_root / "infrastructure"
-    presentation_dir = src_root / "presentation"
-
-    ensure_dir(src_root)
-
-    # Domain layer
-    domain_entities = domain_dir / "entities"
-    domain_value_objects = domain_dir / "value_objects"
-    domain_repositories = domain_dir / "repositories"
-    domain_services = domain_dir / "services"
-
-    for d in [domain_entities, domain_value_objects, domain_repositories, domain_services]:
-        ensure_dir(d)
-        _render_and_write("services/app/__init__.py.jinja",
-                          d / "__init__.py", {})
-
-    # Create entity files for each configured entity
-    entities = config.get("entities", ["User", "Product"])
-    for entity in entities:
-        _render_and_write("project/onion/domain/entity.py.jinja",
-                          domain_entities / f"{entity.lower()}.py",
-                          {"entity_name": entity})
-
-    # Application layer
-    app_use_cases = application_dir / "use_cases"
-    app_dtos = application_dir / "dtos"
-    app_interfaces = application_dir / "interfaces"
-
-    if config.get("include_cqrs", False):
-        app_commands = application_dir / "commands"
-        app_queries = application_dir / "queries"
-        for d in [app_use_cases, app_dtos, app_interfaces, app_commands, app_queries]:
-            ensure_dir(d)
-            _render_and_write("services/app/__init__.py.jinja",
-                              d / "__init__.py", {})
-    else:
-        for d in [app_use_cases, app_dtos, app_interfaces]:
-            ensure_dir(d)
-            _render_and_write("services/app/__init__.py.jinja",
-                              d / "__init__.py", {})
-
-    # Infrastructure layer
-    infra_database = infrastructure_dir / "database"
-    infra_external = infrastructure_dir / "external_services"
-    infra_repositories = infrastructure_dir / "repositories"
-
-    for d in [infra_database, infra_external, infra_repositories]:
-        ensure_dir(d)
-        _render_and_write("services/app/__init__.py.jinja",
-                          d / "__init__.py", {})
-
-    # Presentation layer
-    pres_api = presentation_dir / "api"
-    pres_controllers = presentation_dir / "controllers"
-    pres_schemas = presentation_dir / "schemas"
-
-    for d in [pres_api, pres_controllers, pres_schemas]:
-        ensure_dir(d)
-        _render_and_write("services/app/__init__.py.jinja",
-                          d / "__init__.py", {})
-
-    # Create API routes file
-    _render_and_write("project/onion/presentation_routes.py.jinja",
-                      pres_api / "routes.py", {})
-
-    # Create main application file
-    _render_and_write("project/onion/main.py.jinja", src_root / "main.py",
-                      {"project_name": project_name})
-
-    # Create dependency injection setup
-    if config.get("include_di", True):
-        _render_and_write("project/onion/container.py.jinja",
-                          src_root / "container.py", {})
-
-    # Create tests directory with proper structure
-    tests_root = base_path / "tests"
-    tests_unit = tests_root / "unit"
-    tests_integration = tests_root / "integration"
-
-    for d in [tests_unit, tests_integration]:
-        ensure_dir(d)
-        _render_and_write("services/app/__init__.py.jinja",
-                          d / "__init__.py", {})
-
-
 def _scaffold_rest_api_service(service_path: Path, service_name: str, auth_type: AuthType, db_choice: DbType, cache_choice: CacheType) -> None:
     """Scaffold a REST API service using the domain-based structure."""
     _scaffold_domain_structure(
@@ -443,7 +354,8 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
             service_path,
             auth_type,
             service_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -461,7 +373,8 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
             service_path,
             db_choice,
             service_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -473,7 +386,8 @@ def _scaffold_service(service_path: Path, service_name: str, auth_type: AuthType
             service_path,
             cache_choice,
             service_name,
-            template_env=_env
+            template_env=_env,
+            clean_existing=False  # No cleanup needed during initial project creation
         )
 
         # Update configuration files
@@ -589,11 +503,6 @@ def scaffold_project_structure(
         _scaffold_microservices(app_root, project_name, auth_type,
                                 db_choice, cache_choice, architecture_config or {})
 
-    elif architecture == "onion-architecture":
-        # Handle Onion architecture
-        _scaffold_onion_architecture(app_root, project_name, auth_type,
-                                     db_choice, cache_choice, architecture_config or {})
-
     # UV/pyproject setup and top-level files
     context = {
         "project_name": project_name,
@@ -632,5 +541,6 @@ def scaffold_project_structure(
                 _render_and_write("project/rest-apis/infra/.gitkeep.jinja",
                                   infra_dir / ".gitkeep", context)
 
-    # Sync all dependencies to pyproject.toml
-    _sync_project_dependencies(app_root, auth_type, db_choice, cache_choice)
+    # Note: Dependencies are already included in the pyproject.toml template
+    # No need to sync them again during project creation
+    # _sync_project_dependencies(app_root, auth_type, db_choice, cache_choice)

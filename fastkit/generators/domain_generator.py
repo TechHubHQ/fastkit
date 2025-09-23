@@ -31,20 +31,29 @@ def scaffold_domain(
 ) -> None:
     """Create a new domain in an existing FastKit project."""
 
+    # Detect database type first
+    db_type = _detect_database_type(project_path)
+
     context = {
         "domain_name": domain_name,
-        "project_name": project_path.name
+        "project_name": project_path.name,
+        "db_type": db_type
     }
 
     # Create domain directory
     domain_path = project_path / "app" / "domains" / domain_name
     _ensure_dir(domain_path)
 
-    # Create domain files
-    domain_files = [
+    # Determine template directory based on database type
+    if db_type == "mongodb":
+        db_template_dir = "mongodb"
+    else:
+        db_template_dir = "sqlalchemy"  # Default for SQL databases
+
+    # Create database-specific domain files
+    db_specific_files = [
         "__init__.py",
         "models.py",
-        "schemas.py",
         "repositories.py",
         "services.py",
         "routes.py",
@@ -52,8 +61,22 @@ def scaffold_domain(
         "exceptions.py"
     ]
 
-    for file_name in domain_files:
-        template_path = f"domains/{file_name}.jinja"
+    for file_name in db_specific_files:
+        template_path = f"domains/{db_template_dir}/{file_name}.jinja"
+        dest_path = domain_path / file_name
+
+        if dest_path.exists() and not force:
+            continue  # Skip existing files unless force is True
+
+        _render_and_write(template_path, dest_path, context)
+
+    # Create shared domain files (database-agnostic)
+    shared_files = [
+        "schemas.py"
+    ]
+
+    for file_name in shared_files:
+        template_path = f"domains/shared/{file_name}.jinja"
         dest_path = domain_path / file_name
 
         if dest_path.exists() and not force:
@@ -92,13 +115,9 @@ def scaffold_domain(
     _sync_domain_dependencies(project_path, domain_name)
 
 
-def _sync_domain_dependencies(project_path: Path, domain_name: str) -> None:
-    """Detect and sync dependencies based on domain content."""
-    dep_manager = get_dependency_manager(project_path)
-
-    # Check if the project uses a database by looking for existing db services
+def _detect_database_type(project_path: Path) -> str:
+    """Detect the database type used in the project."""
     app_path = project_path / "app"
-    database_detected = False
 
     # Check for existing database configuration
     config_path = app_path / "core" / "config.py"
@@ -106,58 +125,61 @@ def _sync_domain_dependencies(project_path: Path, domain_name: str) -> None:
         config_content = config_path.read_text(encoding='utf-8')
 
         # Detect database type from configuration
-        if "postgresql://" in config_content or "psycopg2" in config_content:
-            dep_manager.sync_service_dependencies("db", "postgresql")
-            database_detected = True
-        elif "mysql://" in config_content or "pymysql" in config_content:
-            dep_manager.sync_service_dependencies("db", "mysql")
-            database_detected = True
+        if "mongodb://" in config_content or "motor" in config_content:
+            return "mongodb"
+        elif "postgresql://" in config_content or "psycopg2" in config_content:
+            return "postgresql"
+        elif "mysql://" in config_content or "mysql+pymysql://" in config_content or "pymysql" in config_content:
+            return "mysql"
         elif "sqlite://" in config_content:
-            dep_manager.sync_service_dependencies("db", "sqlite")
-            database_detected = True
-        elif "mongodb://" in config_content or "motor" in config_content:
-            dep_manager.sync_service_dependencies("db", "mongodb")
-            database_detected = True
+            return "sqlite"
         elif "mssql://" in config_content or "pyodbc" in config_content:
-            dep_manager.sync_service_dependencies("db", "mssql")
-            database_detected = True
+            return "mssql"
 
     # Check for existing database directory
-    if not database_detected:
-        db_path = app_path / "db"
-        if db_path.exists():
-            # If db directory exists, check what's in it to determine database type
-            db_files = list(db_path.glob("*.py"))
-            if db_files:
-                # Read database files to detect type
-                for db_file in db_files:
-                    content = db_file.read_text(encoding='utf-8')
-                    if "postgresql" in content.lower():
-                        dep_manager.sync_service_dependencies(
-                            "db", "postgresql")
-                        database_detected = True
-                        break
-                    elif "mysql" in content.lower():
-                        dep_manager.sync_service_dependencies("db", "mysql")
-                        database_detected = True
-                        break
-                    elif "mongodb" in content.lower() or "motor" in content.lower():
-                        dep_manager.sync_service_dependencies("db", "mongodb")
-                        database_detected = True
-                        break
-                    elif "mssql" in content.lower() or "pyodbc" in content.lower():
-                        dep_manager.sync_service_dependencies("db", "mssql")
-                        database_detected = True
-                        break
+    db_path = app_path / "db"
+    if db_path.exists():
+        # If db directory exists, check what's in it to determine database type
+        db_files = list(db_path.glob("*.py"))
+        if db_files:
+            # Read database files to detect type
+            for db_file in db_files:
+                content = db_file.read_text(encoding='utf-8')
+                if "mongodb" in content.lower() or "motor" in content.lower():
+                    return "mongodb"
+                elif "postgresql" in content.lower():
+                    return "postgresql"
+                elif "mysql" in content.lower():
+                    return "mysql"
+                elif "mssql" in content.lower() or "pyodbc" in content.lower():
+                    return "mssql"
 
-    # Check the created domain model to see if it uses SQLAlchemy
-    domain_model_path = app_path / "domains" / domain_name / "models.py"
-    if domain_model_path.exists():
-        model_content = domain_model_path.read_text(encoding='utf-8')
-        if "sqlalchemy" in model_content.lower() and not database_detected:
-            # Domain uses SQLAlchemy but no specific database detected, default to SQLite
-            dep_manager.sync_service_dependencies("db", "sqlite")
-            database_detected = True
+    # Check pyproject.toml for database dependencies
+    pyproject_path = project_path / "pyproject.toml"
+    if pyproject_path.exists():
+        pyproject_content = pyproject_path.read_text(encoding='utf-8')
+        if "motor" in pyproject_content:
+            return "mongodb"
+        elif "psycopg2" in pyproject_content:
+            return "postgresql"
+        elif "pymysql" in pyproject_content:
+            return "mysql"
+        elif "pyodbc" in pyproject_content:
+            return "mssql"
+        elif "sqlalchemy" in pyproject_content:
+            return "sqlite"  # Default SQL database
+
+    # Default to SQLite if no specific database is detected
+    return "sqlite"
+
+
+def _sync_domain_dependencies(project_path: Path, domain_name: str) -> None:
+    """Detect and sync dependencies based on domain content."""
+    dep_manager = get_dependency_manager(project_path)
+
+    # Detect database type and sync dependencies
+    db_type = _detect_database_type(project_path)
+    dep_manager.sync_service_dependencies("db", db_type)
 
     # Always add testing dependencies when creating domains with tests
     dep_manager.sync_service_dependencies("testing", "pytest")

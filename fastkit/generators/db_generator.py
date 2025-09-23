@@ -5,13 +5,15 @@ from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
 
 from .utils import ensure_dir, render_and_write
+from .cleanup_utils import cleanup_database_files, cleanup_database_config, cleanup_database_imports
 
 
 def generate_database_setup(
     project_path: Path,
     db_choice: str,
     project_name: str,
-    template_env: Environment = None
+    template_env: Environment = None,
+    clean_existing: bool = True
 ) -> None:
     """Generate unified database setup files.
 
@@ -23,7 +25,14 @@ def generate_database_setup(
         db_choice: Database choice (postgresql, mysql, sqlite, mongodb, mssql, none)
         project_name: Name of the project
         template_env: Optional Jinja2 environment (will create if not provided)
+        clean_existing: Whether to clean up existing database files before generating new ones
     """
+    # Clean up existing database setup if requested
+    if clean_existing:
+        cleanup_database_files(project_path)
+        cleanup_database_config(project_path)
+        cleanup_database_imports(project_path)
+    
     if db_choice == "none":
         return
 
@@ -55,9 +64,10 @@ def _generate_core_db_files(
     context: Dict[str, Any],
     template_env: Environment
 ) -> None:
-    """Generate core database files that are common across all database types."""
+    """Generate core database files based on database type."""
+    db_choice = context.get("db_choice")
 
-    # Generate __init__.py
+    # Generate __init__.py (always needed)
     render_and_write(
         "services/db/__init__.py.jinja",
         db_dir / "__init__.py",
@@ -65,15 +75,7 @@ def _generate_core_db_files(
         template_env
     )
 
-    # Generate base.py (connection and engine setup)
-    render_and_write(
-        "services/db/base.py.jinja",
-        db_dir / "base.py",
-        context,
-        template_env
-    )
-
-    # Generate session.py (session management and database manager)
+    # Generate session.py (always needed for connection management)
     render_and_write(
         "services/db/session.py.jinja",
         db_dir / "session.py",
@@ -81,13 +83,26 @@ def _generate_core_db_files(
         template_env
     )
 
-    # Generate base_model.py (model definitions and mixins)
-    render_and_write(
-        "services/db/base_model.py.jinja",
-        db_dir / "base_model.py",
-        context,
-        template_env
-    )
+    # Only generate SQLAlchemy-specific files for SQL databases
+    if db_choice in ["postgresql", "mysql", "sqlite", "mssql"]:
+        # Generate base.py (SQLAlchemy connection and engine setup)
+        render_and_write(
+            "services/db/base.py.jinja",
+            db_dir / "base.py",
+            context,
+            template_env
+        )
+
+        # Generate base_model.py (SQLAlchemy model definitions and mixins)
+        render_and_write(
+            "services/db/base_model.py.jinja",
+            db_dir / "base_model.py",
+            context,
+            template_env
+        )
+
+    # For MongoDB, we don't need base.py and base_model.py as they contain
+    # only placeholder content that's not useful
 
 
 def update_database_configuration(
@@ -132,7 +147,7 @@ def _generate_database_config_section(db_choice: str, project_name: str) -> str:
         "postgresql": f'''    # Database settings
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/{project_name.replace("-", "_")}_db")''',
         "mysql": f'''    # Database settings
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql://user:password@localhost/{project_name.replace("-", "_")}_db")''',
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://user:password@localhost/{project_name.replace("-", "_")}_db")''',
         "sqlite": f'''    # Database settings
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./{project_name.replace("-", "_")}.db")''',
         "mongodb": f'''    # Database settings

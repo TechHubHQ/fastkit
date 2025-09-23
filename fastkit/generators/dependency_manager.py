@@ -13,7 +13,7 @@ class DependencyManager:
         # Database dependencies
         "db": {
             "postgresql": ["sqlalchemy>=2.0.0", "psycopg2-binary>=2.9.0"],
-            "mysql": ["sqlalchemy>=2.0.0", "pymysql>=1.0.0"],
+            "mysql": ["sqlalchemy>=2.0.0", "pymysql>=1.1.0", "cryptography>=41.0.0"],
             "sqlite": ["sqlalchemy>=2.0.0"],
             "mongodb": ["motor>=3.0.0"],
             "mssql": ["sqlalchemy>=2.0.0", "pyodbc>=4.0.0"],
@@ -149,15 +149,41 @@ class DependencyManager:
         in_dependencies = False
         for line in content.split('\n'):
             line = line.strip()
-            if line == 'dependencies = [':
+            if line == 'dependencies = [' or line.startswith('dependencies = ['):
                 in_dependencies = True
+                # Handle single-line format: dependencies = ["dep1", "dep2"]
+                if line.endswith(']'):
+                    # Extract dependencies from single line
+                    deps_part = line[line.find('[') + 1:line.rfind(']')]
+                    if deps_part.strip():
+                        for dep in deps_part.split(','):
+                            dep = dep.strip().strip('"\'')
+                            if dep:
+                                dependencies.add(dep)
+                    in_dependencies = False
                 continue
-            elif in_dependencies and line == ']':
+            elif in_dependencies and (line == ']' or line.endswith(']')):
+                # Handle closing bracket
+                if line != ']' and not line.startswith('#'):
+                    # Extract dependency from line with closing bracket
+                    dep_part = line[:line.rfind(']')].strip()
+                    if dep_part.endswith(','):
+                        dep_part = dep_part[:-1]
+                    if dep_part.startswith('"') and dep_part.endswith('"'):
+                        dep = dep_part[1:-1]
+                        dependencies.add(dep)
                 break
-            elif in_dependencies and line.startswith('"') and line.endswith('",'):
+            elif in_dependencies and line and not line.startswith('#'):
                 # Extract dependency name (remove quotes and comma)
-                dep = line[1:-2]
-                dependencies.add(dep)
+                dep_line = line
+                if dep_line.endswith(','):
+                    dep_line = dep_line[:-1]
+                if dep_line.startswith('"') and dep_line.endswith('"'):
+                    dep = dep_line[1:-1]
+                    dependencies.add(dep)
+                elif dep_line.startswith("'") and dep_line.endswith("'"):
+                    dep = dep_line[1:-1]
+                    dependencies.add(dep)
 
         return dependencies
 

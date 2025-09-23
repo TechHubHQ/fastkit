@@ -5,13 +5,15 @@ from typing import Dict, Any
 from jinja2 import Environment, FileSystemLoader
 
 from .utils import ensure_dir, render_and_write
+from .cleanup_utils import cleanup_cache_files, cleanup_cache_config, cleanup_cache_imports
 
 
 def generate_cache_setup(
     project_path: Path,
     cache_choice: str,
     project_name: str,
-    template_env: Environment = None
+    template_env: Environment = None,
+    clean_existing: bool = True
 ) -> None:
     """Generate unified cache setup files.
 
@@ -23,7 +25,14 @@ def generate_cache_setup(
         cache_choice: Cache choice (redis, memcached, dynamodb, in-memory, none)
         project_name: Name of the project
         template_env: Optional Jinja2 environment (will create if not provided)
+        clean_existing: Whether to clean up existing cache files before generating new ones
     """
+    # Clean up existing cache setup if requested
+    if clean_existing:
+        cleanup_cache_files(project_path)
+        cleanup_cache_config(project_path)
+        cleanup_cache_imports(project_path)
+    
     if cache_choice == "none":
         return
 
