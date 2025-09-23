@@ -242,7 +242,6 @@ def create_domain_examples_panel():
 
     # Technical domains
     examples_content.append("🔧 TECHNICAL DOMAINS:\n", style="bold bright_blue")
-    examples_content.append("   fastkit add-domain auth", style="bright_green")
     examples_content.append(
         "         # Authentication & authorization\n", style="dim")
     examples_content.append(
