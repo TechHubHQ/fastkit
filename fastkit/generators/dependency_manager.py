@@ -23,7 +23,6 @@ class DependencyManager:
         "cache": {
             "redis": ["redis>=4.0.0"],
             "memcached": ["pymemcache>=4.0.0"],
-            "dynamodb": ["boto3>=1.26.0"],
             "in-memory": ["cachetools>=5.0.0"],
         },
 

@@ -42,7 +42,6 @@ def create_service_overview_table():
     cache_table.add_row("redis", "In-Memory", "High performance, pub/sub")
     cache_table.add_row("memcached", "Distributed",
                         "Simple caching, scalability")
-    cache_table.add_row("dynamodb", "Cloud", "AWS environments, serverless")
     cache_table.add_row("in-memory", "Local", "Development, testing")
 
     cache_panel = Panel(

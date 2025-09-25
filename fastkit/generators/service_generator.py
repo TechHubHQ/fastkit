@@ -81,8 +81,6 @@ def _read_project_config(project_path: Path) -> Dict[str, Any]:
         config["cache_choice"] = "redis"
     elif "pymemcache" in content:
         config["cache_choice"] = "memcached"
-    elif "boto3" in content:
-        config["cache_choice"] = "dynamodb"
     elif "cachetools" in content:
         config["cache_choice"] = "in-memory"
 
@@ -289,20 +287,14 @@ def _generate_cache_config(config: Dict[str, Any]) -> str:
 
     cache_configs = {
         "redis": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")''',
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")''',
         "memcached": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    MEMCACHED_SERVERS: str = os.getenv("MEMCACHED_SERVERS", "localhost:11211")''',
-        "dynamodb": f'''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
-    DYNAMODB_TABLE_NAME: str = os.getenv("DYNAMODB_TABLE_NAME", "{project_name.replace("-", "_")}_cache")
-    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
-    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")''',
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        MEMCACHED_SERVERS: str = os.getenv("MEMCACHED_SERVERS", "localhost:11211")''',
         "in-memory": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    CACHE_MAX_SIZE: int = 1000  # Maximum number of items in cache'''
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        CACHE_MAX_SIZE: int = 1000  # Maximum number of items in cache'''
     }
 
     return cache_configs.get(cache_choice, "")

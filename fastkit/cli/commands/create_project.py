@@ -111,7 +111,19 @@ def _create_database_info_panel():
         "Document storage, flexible schemas, rapid development", style="white")
     db_content.append("\n   Why choose: ", style="dim")
     db_content.append(
-        "Schema flexibility, horizontal scaling, JSON-like documents", style="cyan")
+        "Schema flexibility, horizontal scaling, JSON-like documents\n\n", style="cyan")
+
+    # SQL Server
+    db_content.append("🏢  ", style="bright_blue")
+    db_content.append("SQL Server", style="bold bright_blue")
+    db_content.append(" (SQL) ", style="dim")
+    db_content.append("⭐⭐⭐⭐", style="yellow")
+    db_content.append("\n   Best for: ", style="dim")
+    db_content.append(
+        "Enterprise applications, Windows environments, Microsoft stack", style="white")
+    db_content.append("\n   Why choose: ", style="dim")
+    db_content.append(
+        "Enterprise features, excellent tooling, Windows integration", style="cyan")
 
     return Panel(
         db_content,
@@ -148,18 +160,6 @@ def _create_cache_info_panel():
     cache_content.append("\n   Why choose: ", style="dim")
     cache_content.append(
         "Simple setup, excellent for basic caching needs\n\n", style="cyan")
-
-    # DynamoDB
-    cache_content.append("🟦  ", style="bright_cyan")
-    cache_content.append("DynamoDB", style="bold bright_cyan")
-    cache_content.append(" (Cloud NoSQL) ", style="dim")
-    cache_content.append("🚀🚀", style="yellow")
-    cache_content.append("\n   Best for: ", style="dim")
-    cache_content.append(
-        "Serverless caching, scalable cloud apps, AWS integration", style="white")
-    cache_content.append("\n   Why choose: ", style="dim")
-    cache_content.append(
-        "Fully managed, seamless AWS integration, auto-scaling\n\n", style="cyan")
 
     # In-Memory
     cache_content.append("🧠  ", style="bright_green")
@@ -263,7 +263,6 @@ def _normalize_cache_choice(cache_choice: str) -> str:
     mapping = {
         "redis": "redis",
         "memcached": "memcached",
-        "dynamodb": "dynamodb",
         "in-memory": "in-memory",
         "memory": "in-memory",
         "local": "in-memory",
@@ -341,7 +340,7 @@ def create_project(
 
     🔧 INTEGRATIONS:
         • Database: PostgreSQL, MySQL, SQLite, MongoDB, SQL Server
-        • Cache: Redis, Memcached, DynamoDB, In-Memory
+        • Cache: Redis, Memcached, In-Memory
         • Auth: JWT tokens, OAuth 2.0
         • CI/CD: GitHub Actions workflows
         • Docker: Multi-stage builds and compose files
@@ -466,8 +465,8 @@ def create_project(
     if typer.confirm("🗄️ Add a database integration?", default=True):
         db_choice = _normalize_db_choice(
             _prompt_with_choices(
-                "🗄️ Choose a database",
-                ["postgresql", "sqlite", "mysql", "mongodb", "none"],
+                "Choose a database",
+                ["postgresql", "sqlite", "mysql", "mongodb", "mssql"],
                 default="sqlite",
             )
         )
@@ -487,8 +486,8 @@ def create_project(
     cache_choice = "none"
     if typer.confirm("⚡ Add a caching system?", default=False):
         cache_choice = _normalize_cache_choice(
-            _prompt_with_choices("⚡ Choose a cache provider", [
-                                 "redis", "memcached", "dynamodb", "in-memory", "none"], default="redis")
+            _prompt_with_choices("Choose a cache provider", [
+                                 "redis", "memcached", "in-memory", "none"], default="redis")
         )
         console.print(f"[dim]✓ Selected: {cache_choice}[/dim]")
     else:

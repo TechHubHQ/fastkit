@@ -32,8 +32,6 @@ dependencies = [
     "redis>=4.0.0",
 {%- elif cache_choice == "memcached" %}
     "pymemcache>=4.0.0",
-{%- elif cache_choice == "dynamodb" %}
-    "boto3>=1.26.0",
 {%- elif cache_choice == "in-memory" %}
     "cachetools>=5.0.0",
 {%- endif %}

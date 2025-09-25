@@ -4,8 +4,6 @@
 from .redis_client import cache_client
 {% elif cache_choice == "memcached" -%}
 from .memcached_client import cache_client
-{% elif cache_choice == "dynamodb" -%}
-from .dynamodb_client import cache_client
 {% elif cache_choice == "in-memory" -%}
 from .memory_client import cache_client
 {% endif -%}

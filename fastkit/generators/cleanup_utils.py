@@ -16,9 +16,7 @@ def cleanup_cache_files(project_path: Path) -> None:
     cache_files = [
         "redis_client.py",
         "memcached_client.py",
-        "dynamodb_client.py",
         "memory_client.py",
-        "in_memory_client.py"  # Alternative naming
     ]
 
     for cache_file in cache_files:
@@ -43,10 +41,6 @@ def cleanup_cache_config(project_path: Path) -> None:
         r'    CACHE_TTL:.*?\n',
         r'    REDIS_URL:.*?\n',
         r'    MEMCACHED_SERVERS:.*?\n',
-        r'    AWS_REGION:.*?\n',
-        r'    DYNAMODB_TABLE_NAME:.*?\n',
-        r'    AWS_ACCESS_KEY_ID:.*?\n',
-        r'    AWS_SECRET_ACCESS_KEY:.*?\n',
         r'    CACHE_MAX_SIZE:.*?\n'
     ]
 

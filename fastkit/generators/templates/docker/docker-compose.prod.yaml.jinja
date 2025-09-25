@@ -23,6 +23,8 @@ services:
       - postgres
 {% elif db_choice == "mysql" -%}
       - mysql
+{% elif db_choice == "mssql" -%}
+      - sqlserver
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
@@ -73,6 +75,8 @@ services:
       - postgres
 {% elif db_choice == "mysql" -%}
       - mysql
+{% elif db_choice == "mssql" -%}
+      - sqlserver
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
@@ -118,6 +122,24 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
+{% elif db_choice == "mssql" -%}
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: ${MSSQL_PID:-Express}
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: ["/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${SA_PASSWORD}", "-Q", "SELECT 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -174,6 +196,8 @@ volumes:
   postgres_data:
 {% elif db_choice == "mysql" -%}
   mysql_data:
+{% elif db_choice == "mssql" -%}
+  sqlserver_data:
 {% endif -%}
 {% if cache_choice == "redis" -%}
   redis_data:

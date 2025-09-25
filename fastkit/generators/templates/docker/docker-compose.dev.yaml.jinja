@@ -22,6 +22,8 @@ services:
       - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
 {%- elif db_choice == "sqlite" %}
       - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
+{%- elif db_choice == "mssql" %}
+      - DATABASE_URL=mssql+pyodbc://sa:YourPassword123@sqlserver:1433/{{ project_name.replace('-', '_') }}?driver=ODBC+Driver+17+for+SQL+Server
 {%- endif %}
 {%- endif %}
 {% if cache_choice == "redis" -%}
@@ -34,6 +36,8 @@ services:
       - postgres
 {% elif db_choice == "mysql" -%}
       - mysql
+{% elif db_choice == "mssql" -%}
+      - sqlserver
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
@@ -83,6 +87,8 @@ services:
       - DATABASE_URL=mysql://mysql:mysql@mysql:3306/{{ project_name.replace('-', '_') }}
 {%- elif db_choice == "sqlite" %}
       - DATABASE_URL=sqlite:///./{{ project_name.replace('-', '_') }}.db
+{%- elif db_choice == "mssql" %}
+      - DATABASE_URL=mssql+pyodbc://sa:YourPassword123@sqlserver:1433/{{ project_name.replace('-', '_') }}?driver=ODBC+Driver+17+for+SQL+Server
 {%- endif %}
 {%- endif %}
 {% if cache_choice == "redis" -%}
@@ -93,6 +99,8 @@ services:
       - postgres
 {% elif db_choice == "mysql" -%}
       - mysql
+{% elif db_choice == "mssql" -%}
+      - sqlserver
 {% endif -%}
 {% if cache_choice == "redis" -%}
       - redis
@@ -136,6 +144,20 @@ services:
     networks:
       - {{ project_name.replace('-', '_') }}_network
 
+{% elif db_choice == "mssql" -%}
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: YourPassword123
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - {{ project_name.replace('-', '_') }}_network
+
 {% endif -%}
 {% if cache_choice == "redis" -%}
   redis:
@@ -171,6 +193,8 @@ volumes:
   postgres_data:
 {% elif db_choice == "mysql" -%}
   mysql_data:
+{% elif db_choice == "mssql" -%}
+  sqlserver_data:
 {% endif -%}
 {% if cache_choice == "redis" -%}
   redis_data:

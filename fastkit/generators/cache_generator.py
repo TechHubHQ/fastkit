@@ -22,7 +22,7 @@ def generate_cache_setup(
 
     Args:
         project_path: Path to the project root
-        cache_choice: Cache choice (redis, memcached, dynamodb, in-memory, none)
+        cache_choice: Cache choice (redis, memcached, in-memory, none)
         project_name: Name of the project
         template_env: Optional Jinja2 environment (will create if not provided)
         clean_existing: Whether to clean up existing cache files before generating new ones
@@ -91,7 +91,6 @@ def _generate_cache_client_files(
     client_templates = {
         "redis": "services/cache/redis_client.py.jinja",
         "memcached": "services/cache/memcached_client.py.jinja",
-        "dynamodb": "services/cache/dynamodb_client.py.jinja",
         "in-memory": "services/cache/memory_client.py.jinja"
     }
 
@@ -99,7 +98,6 @@ def _generate_cache_client_files(
     client_files = {
         "redis": "redis_client.py",
         "memcached": "memcached_client.py",
-        "dynamodb": "dynamodb_client.py",
         "in-memory": "memory_client.py"
     }
 
@@ -152,20 +150,14 @@ def _generate_cache_config_section(cache_choice: str, project_name: str) -> str:
 
     cache_configs = {
         "redis": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")''',
-        "memcached": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    MEMCACHED_SERVERS: str = os.getenv("MEMCACHED_SERVERS", "localhost:11211")''',
-        "dynamodb": f'''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
-    DYNAMODB_TABLE_NAME: str = os.getenv("DYNAMODB_TABLE_NAME", "{project_name.replace("-", "_")}_cache")
-    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
-    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")''',
-        "in-memory": '''    # Cache settings
-    CACHE_TTL: int = 300  # 5 minutes default TTL
-    CACHE_MAX_SIZE: int = 1000  # Maximum number of items in cache'''
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")''',
+            "memcached": '''    # Cache settings
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        MEMCACHED_SERVERS: str = os.getenv("MEMCACHED_SERVERS", "localhost:11211")''',
+            "in-memory": '''    # Cache settings
+        CACHE_TTL: int = 300  # 5 minutes default TTL
+        CACHE_MAX_SIZE: int = 1000  # Maximum number of items in cache'''
     }
 
     return cache_configs.get(cache_choice, "")

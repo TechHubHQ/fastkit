@@ -134,7 +134,6 @@ def create_help():
     cache_table.add_column("Type", style="white")
     cache_table.add_row("redis", "In-Memory")
     cache_table.add_row("memcached", "Distributed")
-    cache_table.add_row("dynamodb", "Cloud")
     cache_table.add_row("in-memory", "Local")
 
     cache_panel = Panel(

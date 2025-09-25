@@ -12,7 +12,7 @@ AuthType = Literal["none", "jwt", "oauth"]
 ArchitectureType = Literal["fullstack",
                            "microservices", "rest-apis"]
 DbType = Literal["none", "postgresql", "sqlite", "mysql", "mongodb", "mssql"]
-CacheType = Literal["none", "redis", "memcached", "dynamodb", "in-memory"]
+CacheType = Literal["none", "redis", "memcached", "in-memory"]
 LanguageType = Literal["typescript", "javascript"]
 
 
